@@ -1,0 +1,11 @@
+{
+  "name": "btx-price-build",
+  "private": true,
+  "version": "1.1.2",
+  "description": "Biotex Price Windows desktop package build",
+  "devDependencies": {
+    "@electron/packager": "20.3.0",
+    "electron": "45.2.2",
+    "exceljs": "^4.4.0"
+  }
+}
