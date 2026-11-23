@@ -1,5 +1,14 @@
 # BTX Price
 
+## GitHub'dan Windows kurulumu
+
+Özel deponun [Releases](https://github.com/ardaacala/BTXPrice/releases) bölümünden istediğiniz sürümün `BTXPrice-Setup-1.1.2.exe` dosyasını indirin. Kurulum sihirbazında isteğe bağlı masaüstü kısayolunu seçebilirsiniz.
+
+- **Boş kurulum (main):** İşletme kayıtları olmadan başlar.
+- **Bu bilgisayarın kayıtlarıyla (data/local-records-2026-11-23):** Yeni kullanıcı profilinde Edge'den alınan kayıtlarla başlar. Mevcut BTXPrice kayıtlarının üzerine yazmaz. Masaüstü sürümünün ayrı JSON kaydı aynı sürümde indirilebilir ve **Ayarlar → JSON içe aktar** ile yüklenebilir.
+
+Her iki dalın kurulum dosyası GitHub Actions ile Windows üzerinde oluşturulur ve ayrı bir sürüm olarak yayımlanır. Depo özel erişimlidir; indiren kişinin erişim izni olmalıdır. Dosyalar dijital olarak imzalı değildir; Windows güvenlik uyarısı veya Smart App Control engeli görülebilir.
+
 Set ve yarı mamul maliyetlerini hesaplayan uygulama. Şu an doğrudan tarayıcıda, sunucu kurmadan kullanılabilir.
 
 ## Kurulumsuz tarayıcı sürümü

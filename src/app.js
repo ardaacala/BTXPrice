@@ -10,7 +10,7 @@ const blankRecipe=()=>({id:id(),name:'Yeni yarı mamul',code:'',lot:'',size:'',f
 const blankProfile=()=>({id:id(),name:'Yeni ambalaj profili',bundleType:'',bundleSize:'',rollSize:'',mode:'none',setsPerBox:'',setsPerBag:'',rollInsert:emptyTime(),rollClose:emptyTime(),boxLabor:emptyTime(),bagLabor:emptyTime()});
 const blankSet=()=>({id:id(),name:'Yeni set',code:'',lot:'',profileId:'',orderQuantity:'1',profitRate:String(state?.settings?.profit??'0'),shippingTotal:'',otherExpenses:[],rows:[],extras:[],taxIds:[]});
 const initial=()=>({settings:{monthlySalary:'',monthlyHours:'',surcharge:'0',profit:'0',eurTry:'',usdTry:'',ratesVerified:false},taxes:[],operationNames:[...operationNames],materials:[],recipes:[],profiles:[],sets:[]});
-let state; try {state=JSON.parse(localStorage.getItem(KEY))||initial();} catch {state=initial();}
+let state; try {state=JSON.parse(localStorage.getItem(KEY))||globalThis.__BTXPRICE_SEED__||initial();} catch {state=initial();}
 function indexMaterialPrice(material,settings,{force=false}={}){
   if(!force && number(material.usdBasePrice)!==null){material.usdIndexPending=false;return true;}
   const price=number(material.price),currency=material.currency||'TRY';

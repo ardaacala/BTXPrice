@@ -1,0 +1,66 @@
+name: Windows kurulumu
+
+on:
+  push:
+    branches:
+      - main
+      - data/local-records-2026-11-23
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  installer:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Bağımlılıkları kur
+        run: npm ci
+      - name: Hesaplama testleri
+        run: node tests/run-calc.mjs
+      - name: Windows kurulum dosyasını oluştur
+        shell: pwsh
+        run: |
+          if ($env:GITHUB_REF_NAME -eq 'main') {
+            & powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\build-installer.ps1 -UnsignedDevelopmentBuild
+          } elseif ($env:GITHUB_REF_NAME -eq 'data/local-records-2026-11-23') {
+            & powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\build-installer.ps1 -UnsignedDevelopmentBuild -SeedDataPath 'data\edge-2026-11-23.json'
+          } else {
+            throw "Desteklenmeyen dal: $env:GITHUB_REF_NAME"
+          }
+          if ($LASTEXITCODE -ne 0) { throw "Derleme başarısız: $LASTEXITCODE" }
+          $setup = Get-Item -LiteralPath 'dist\BTXPrice-Setup-1.1.2.exe' -ErrorAction Stop
+          if ($setup.Length -lt 1000000) { throw 'Kurulum dosyası beklenenden küçük.' }
+          if ($env:GITHUB_REF_NAME -eq 'data/local-records-2026-11-23' -and
+              -not (Test-Path -LiteralPath 'build\installer-app\seed-data.js')) {
+            throw 'Verili kurulumda başlangıç kayıtları yok.'
+          }
+      - name: İndirilebilir sürümü yayımla
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $setup = 'dist\BTXPrice-Setup-1.1.2.exe'
+          $hash = (Get-FileHash -LiteralPath $setup -Algorithm SHA256).Hash.ToLowerInvariant()
+          [IO.File]::WriteAllText('dist\SHA256SUMS.txt', "$hash  BTXPrice-Setup-1.1.2.exe`n")
+          $assets = @($setup, 'dist\SHA256SUMS.txt')
+          $releaseFlags = @()
+          if ($env:GITHUB_REF_NAME -eq 'main') {
+            $tag = "main-1.1.2-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT"
+            $title = 'BTX Price 1.1.2 — boş kurulum'
+            $notes = 'Windows kurulum dosyası. Başlangıçta işletme kaydı içermez. Kurulumda masaüstü kısayolu isteğe bağlıdır. Dijital kod imzası yoktur; Windows güvenlik uyarısı veya Smart App Control engeli görülebilir.'
+          } else {
+            $tag = "data-1.1.2-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT"
+            $title = 'BTX Price 1.1.2 — bu bilgisayarın kayıtlarıyla'
+            $notes = 'Windows kurulum dosyası, yeni kullanıcı profilinde Edge kayıtlarını başlangıç verisi olarak açar. Mevcut BTXPrice kayıtlarının üzerine yazmaz. Masaüstü kaydı ayrıca JSON olarak eklidir ve uygulamadan elle içe aktarılabilir. İşletme verileri içerir; depo ve sürüm özel erişimlidir. Dijital kod imzası yoktur; Windows güvenlik uyarısı veya Smart App Control engeli görülebilir.'
+            $assets += @('data\edge-2026-11-23.json', 'data\desktop-2026-11-23.json')
+            $releaseFlags += '--prerelease'
+          }
+          [IO.File]::WriteAllText('dist\RELEASE_NOTES.txt', $notes)
+          gh release create $tag @assets @releaseFlags --target $env:GITHUB_SHA --title $title --notes-file 'dist\RELEASE_NOTES.txt'
+          if ($LASTEXITCODE -ne 0) { throw "GitHub sürümü yayımlanamadı: $LASTEXITCODE" }
