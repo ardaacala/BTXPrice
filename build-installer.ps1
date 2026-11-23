@@ -3,7 +3,8 @@ param(
     [switch]$UnsignedDevelopmentBuild,
     [string]$CodeSigningThumbprint = $env:BTX_CODE_SIGNING_THUMBPRINT,
     [string]$SignToolPath = $env:BTX_SIGNTOOL_PATH,
-    [string]$TimestampUrl = 'http://timestamp.digicert.com'
+    [string]$TimestampUrl = 'http://timestamp.digicert.com',
+    [string]$SeedDataPath = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -83,6 +84,23 @@ $oldTag = '<script type="module" src="./src/app.js"></script>'
 $bundleTag = '<script src="./bundle.js"></script>'
 if ($html.Contains($oldTag)) { $html = $html.Replace($oldTag, $bundleTag) }
 elseif (-not $html.Contains($bundleTag)) { throw 'index.html içindeki uygulama betiği bulunamadı.' }
+if ($SeedDataPath) {
+    $seedFull = [IO.Path]::GetFullPath((Join-Path $projectRoot $SeedDataPath))
+    if (-not $seedFull.StartsWith($projectFull, [StringComparison]::OrdinalIgnoreCase) -or
+        -not (Test-Path -LiteralPath $seedFull -PathType Leaf)) {
+        throw 'Baslangic verisi proje icindeki gecerli bir JSON dosyasi olmali.'
+    }
+    $seedJson = [IO.File]::ReadAllText($seedFull, [Text.Encoding]::UTF8)
+    try { $seed = $seedJson | ConvertFrom-Json -ErrorAction Stop }
+    catch { throw 'Baslangic verisi gecerli JSON degil.' }
+    if (-not $seed.settings -or $null -eq $seed.materials -or $null -eq $seed.recipes -or
+        $null -eq $seed.profiles -or $null -eq $seed.sets) {
+        throw 'Baslangic verisi BTXPrice kaydi degil.'
+    }
+    [IO.File]::WriteAllText((Join-Path $stageFull 'seed-data.js'),
+        'globalThis.__BTXPRICE_SEED__ = ' + $seedJson.Trim() + ';', $utf8)
+    $html = $html.Replace($bundleTag, '<script src="./seed-data.js"></script>' + "`r`n  " + $bundleTag)
+}
 [IO.File]::WriteAllText((Join-Path $stageFull 'index.html'), $html, $utf8)
 
 foreach ($name in @('style.css', 'tutorial.css', 'branding.css', 'README.md', 'app.ico')) {
@@ -134,6 +152,8 @@ $compilerCandidates = @(
     'C:\Program Files (x86)\Inno Setup 6\ISCC.exe',
     'C:\Program Files\Inno Setup 6\ISCC.exe'
 )
+$compilerOnPath = Get-Command ISCC.exe -ErrorAction SilentlyContinue
+if ($compilerOnPath) { $compilerCandidates = @($compilerOnPath.Source) + $compilerCandidates }
 $compiler = $compilerCandidates | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
 if (-not $compiler) { throw 'Inno Setup 6 derleyicisi (ISCC.exe) bulunamadı.' }
 
