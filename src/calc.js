@@ -13,6 +13,22 @@ export function number(value) {
 export const sum = values => values.reduce((a,b) => a+b,0);
 export const round = (n, digits=6) => Math.round((n + Number.EPSILON) * 10**digits) / 10**digits;
 
+export function migrateLegacySetData(data) {
+  for(const set of data.sets||[]){
+    if(set.shippingBoxSize===undefined||set.shippingBoxPrice===undefined){
+      if(set.shippingTotal!==undefined&&set.shippingTotal!==null&&set.shippingTotal!=='')set.legacyShippingTotal=String(set.shippingTotal);
+      set.shippingBoxSize ??= '';set.shippingBoxPrice ??= '';
+    }
+    delete set.shippingTotal;
+    for(const row of set.rows||[]){
+      if(Array.isArray(row.materials))continue;
+      const recipe=data.recipes?.find(x=>x.id===row.recipeId);
+      row.materials=(recipe?.materials||[]).map(line=>({...line,size:recipe.size||'',fabric:recipe.fabric||''}));
+    }
+  }
+  return data;
+}
+
 export function laborRates(settings) {
   const salary=number(settings?.monthlySalary);
   const hours=number(settings?.monthlyHours);
@@ -117,12 +133,13 @@ export function packageLabor(profile) {
 }
 
 // Set satırındaki ilk doğrulanmış yarı mamul fiyatını daha sonra karşılaştırmak için.
-export function recipeUnitCosts(recipe, state) {
+export function setRowUnitCosts(row, state) {
+  const recipe=state.recipes.find(x=>x.id===row?.recipeId);
   if (!recipe) return null;
   const labor=recipeLabor(recipe);
   if (labor.missing) return null;
   let material=0;
-  for (const line of recipe.materials||[]) {
+  for (const line of row.materials||[]) {
     const item=state.materials.find(x=>x.id===line.materialId);
     const quantity=number(line.quantity),price=materialPriceTL(item,state.settings);
     if (!item||quantity===null||quantity<0||price===null) return null;
@@ -134,9 +151,9 @@ export function recipeUnitCosts(recipe, state) {
   return {recipeId:recipe.id,material:round(material,4),labor:round(labor.value*(minuteCost??0)*(1+surcharge/100),4)};
 }
 
-export function recipePriceChange(snapshot, recipe, state) {
-  if (!snapshot||snapshot.recipeId!==recipe?.id) return null;
-  const current=recipeUnitCosts(recipe,state);
+export function setRowPriceChange(snapshot, row, state) {
+  if (!snapshot||snapshot.recipeId!==row?.recipeId) return null;
+  const current=setRowUnitCosts(row,state);
   if (!current) return null;
   const beforeMaterial=number(snapshot.material),beforeLabor=number(snapshot.labor);
   if (beforeMaterial===null||beforeLabor===null) return null;
@@ -183,24 +200,25 @@ export function calculateSet(set, state) {
       if (row.placement?.coverage==='sets' && !(number(row.placement.sets)>0)) issue(`Set satırı ${i+1} · sete dizme: ölçülen set sayısını girin.`,'sets',set.id,`rows.${i}.placement.sets`);
       if (!['item','row','sets'].includes(row.placement?.coverage)) issue(`Set satırı ${i+1} · sete dizme: ölçüm kapsamını seçin.`,'sets',set.id,`rows.${i}.placement.coverage`);
     }
-    const material=sum((recipe.materials||[]).map((line,j)=>{
+    let rowMaterialMissing=false;
+    const material=sum((row.materials||[]).map((line,j)=>{
       const m=state.materials.find(x=>x.id===line.materialId);
       const amount=number(line.quantity), price=materialPriceTL(m,state.settings);
-      if (!m) issue(`${recipe.name} · malzeme ${j+1}: malzeme seçin.`,'recipes',recipe.id,`materials.${j}.materialId`);
-      if (amount===null || amount<0) issue(`${recipe.name} · malzeme ${j+1}: geçerli miktar girin.`,'recipes',recipe.id,`materials.${j}.quantity`);
+      if (!m) issue(`${recipe.name} · malzeme ${j+1}: malzeme seçin.`,'sets',set.id,`rows.${i}.materials.${j}.materialId`);
+      if (amount===null || amount<0) issue(`${recipe.name} · malzeme ${j+1}: geçerli miktar girin.`,'sets',set.id,`rows.${i}.materials.${j}.quantity`);
       if (m && price===null) {
         const reason=number(m.price)===null||number(m.price)<0?'birim fiyatını girin':
           !['metre','adet','metrekare','kg'].includes(m.unit)?'geçerli malzeme birimi seçin':
           m.currency!=='TRY'?'TCMB döviz kuru alınamadı; kurları yenileyin':'birim fiyatını kontrol edin';
         issue(`${m.name}: ${reason}.`,m.currency!=='TRY'&&reason.startsWith('TCMB')?'settings':'materials',m.id,m.currency!=='TRY'&&reason.startsWith('TCMB')?'':'price');
       }
-      if (!m || amount===null || amount<0 || price===null) {missing=true;return 0;}
+      if (!m || amount===null || amount<0 || price===null) {missing=true;rowMaterialMissing=true;return 0;}
       return amount*price;
     }))*qty;
     materials+=material; production+=labor.value*qty; placement+=placing.value;
     excluded+=labor.excluded*qty;
     if (labor.missing || placing.missing) missing=true;
-    return {row,recipe,labor,placing,material,missing:labor.missing||placing.missing};
+    return {row,recipe,labor,placing,material,missing:labor.missing||placing.missing||rowMaterialMissing};
   });
   const profile=state.profiles.find(x=>x.id===set.profileId);
   if(set.profileId && !profile) {missing=true;issue('Set: seçili ambalaj profili bulunamadı; yeniden seçin.','sets',set.id,'profileId');}
@@ -229,11 +247,21 @@ export function calculateSet(set, state) {
   const adjustedLabor=baseLabor===null ? null : round(baseLabor+supplement,4);
   const orderQuantity=number(set.orderQuantity??'1');
   const validOrder=Number.isInteger(orderQuantity)&&orderQuantity>0;
-  const shippingInput=set.shippingTotal===''||set.shippingTotal===null||set.shippingTotal===undefined?0:number(set.shippingTotal);
-  let shippingPerSet=0,expenseMissing=false;
-  if(shippingInput===null||shippingInput<0){expenseMissing=true;shippingPerSet=null;issue('Set: toplam kargo giderini sıfır veya üzeri girin.','sets',set.id,'shippingTotal');}
-  else if(shippingInput>0&&!validOrder){expenseMissing=true;shippingPerSet=null;issue('Kargo giderini set başına bölmek için sipariş adedini sıfırdan büyük tam sayı girin.','sets',set.id,'orderQuantity');}
-  else shippingPerSet=validOrder?round(shippingInput/orderQuantity,4):0;
+  const hasBoxSize=set.shippingBoxSize!==''&&set.shippingBoxSize!==null&&set.shippingBoxSize!==undefined;
+  const hasBoxPrice=set.shippingBoxPrice!==''&&set.shippingBoxPrice!==null&&set.shippingBoxPrice!==undefined;
+  const boxCountInput=hasBoxSize?number(set.shippingBoxSize):null;
+  const boxPriceInput=hasBoxPrice?number(set.shippingBoxPrice):null;
+  let shippingPerSet=0,shippingTotal=0,shippingBoxCount=0,expenseMissing=false;
+  if(!hasBoxSize&&!hasBoxPrice) {
+    if(set.legacyShippingTotal!==undefined&&set.legacyShippingTotal!==''&&number(set.legacyShippingTotal)!==0){
+      expenseMissing=true;shippingPerSet=null;shippingTotal=null;shippingBoxCount=null;
+      issue(`Kargo: eski toplam kargo kaydı (${set.legacyShippingTotal} TL) için koli içi adet ve bir koli maliyetini girin.`,'sets',set.id,'shippingBoxSize');
+    }
+  }
+  else if(!Number.isInteger(boxCountInput)||boxCountInput<=0){expenseMissing=true;shippingPerSet=null;shippingTotal=null;shippingBoxCount=null;issue('Kargo: koli içi adedi sıfırdan büyük tam sayı girin.','sets',set.id,'shippingBoxSize');}
+  else if(boxPriceInput===null||boxPriceInput<0){expenseMissing=true;shippingPerSet=null;shippingTotal=null;shippingBoxCount=null;issue('Kargo: bir koli kargo maliyetini sıfır veya üzeri girin.','sets',set.id,'shippingBoxPrice');}
+  else if(!validOrder){expenseMissing=true;shippingPerSet=null;shippingTotal=null;shippingBoxCount=null;issue('Kargo: koli sayısını hesaplamak için sipariş adedini sıfırdan büyük tam sayı girin.','sets',set.id,'orderQuantity');}
+  else {shippingBoxCount=Math.ceil(orderQuantity/boxCountInput);shippingTotal=round(shippingBoxCount*boxPriceInput,4);shippingPerSet=round(shippingTotal/orderQuantity,4);}
   const otherExpenseLines=(set.otherExpenses||[]).map((expense,i)=>{
     const amount=number(expense.amount),scope=expense.scope||'total';
     let perSet=null;
@@ -267,7 +295,7 @@ export function calculateSet(set, state) {
   const profitAmount=total===null||costWithTax===null?null:round(total-costWithTax,4);
   return {rows,extras,materials:round(materials,4),production:round(production),placement:round(placement),preparation:round(preparation),packaging,
     baseMinutes:round(baseMinutes),baseLabor,supplement,adjustedLabor,excluded:round(excluded),
-    shippingTotal:shippingInput,shippingPerSet,otherExpenseLines,otherExpensePerSet,
+    shippingBoxCount,shippingTotal,shippingPerSet,otherExpenseLines,otherExpensePerSet,
     baseTotal,beforeTax,costWithTax,profitAmount,taxAmount,taxLines,taxRate:totalRate,total,profitRate:profit,
     issues,missing:missing||expenseMissing||(minuteCost===null&&baseMinutes>0)||invalidTax||invalidProfit,status:missing||expenseMissing||(minuteCost===null&&baseMinutes>0)||invalidTax||invalidProfit?'Eksik verili hesap':'Doğrulanmış hesap'};
 }
