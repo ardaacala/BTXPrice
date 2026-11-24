@@ -2,12 +2,13 @@
 
 ## GitHub'dan Windows kurulumu
 
-Özel deponun [Releases](https://github.com/ardaacala/BTXPrice/releases) bölümünden istediğiniz sürümün `BTXPrice-Setup-1.1.2.exe` dosyasını indirin. Kurulum sihirbazında isteğe bağlı masaüstü kısayolunu seçebilirsiniz.
+Özel deponun [Releases](https://github.com/ardaacala/BTXPrice/releases) bölümünden istediğiniz sürümün `BTXPrice-Setup-1.1.3.exe` dosyasını indirin. Kurulum sihirbazında isteğe bağlı masaüstü kısayolunu seçebilirsiniz.
 
 - **Boş kurulum (main):** İşletme kayıtları olmadan başlar.
 - **Bu bilgisayarın kayıtlarıyla (data/local-records-2026-11-23):** Yeni kullanıcı profilinde Edge'den alınan kayıtlarla başlar. Mevcut BTXPrice kayıtlarının üzerine yazmaz. Masaüstü sürümünün ayrı JSON kaydı aynı sürümde indirilebilir ve **Ayarlar → JSON içe aktar** ile yüklenebilir.
+- **Uyarlanmış işçilik kayıtlarıyla (data/labor-records-1.1.3):** 23 Kasım kayıtlarının güncel set malzemesi ve koli kargosu yapısına dönüştürülmüş kopyasını içerir. Eski JSON dosyaları da aynı dalda korunur. Eski toplam kargo tutarından koli kapasitesi ve koli fiyatı çıkarılamaz; bu alanlar tamamlanana kadar ilgili set eksik verili görünür.
 
-Her iki dalın kurulum dosyası GitHub Actions ile Windows üzerinde oluşturulur ve ayrı bir sürüm olarak yayımlanır. Depo özel erişimlidir; indiren kişinin erişim izni olmalıdır. Dosyalar dijital olarak imzalı değildir; Windows güvenlik uyarısı veya Smart App Control engeli görülebilir.
+Her dalın kurulum dosyası GitHub Actions ile Windows üzerinde oluşturulur ve ayrı bir sürüm olarak yayımlanır. Depo özel erişimlidir; indiren kişinin erişim izni olmalıdır. Dosyalar dijital olarak imzalı değildir; Windows güvenlik uyarısı veya Smart App Control engeli görülebilir.
 
 Set ve yarı mamul maliyetlerini hesaplayan uygulama. Şu an doğrudan tarayıcıda, sunucu kurmadan kullanılabilir.
 
@@ -21,7 +22,7 @@ Tarayıcı verileri kendi yerel depolamasında tutar. Başka tarayıcıya veya f
 
 ## Windows kurulumu
 
-`dist/BTXPrice-Setup-1.1.2.exe` dosyasını çalıştırın. Kurulum Biotex Price'ı kullanıcı hesabınıza yükler ve Başlat menüsüne kısayol ekler. **Masaüstüne kısayol ekle** kutusu başlangıçta boş gelir; işaretlerseniz Biotex Price logolu masaüstü kısayolu da oluşturulur. Windows'un uygulama kaldırma ekranından kaldırılabilir.
+`dist/BTXPrice-Setup-1.1.3.exe` dosyasını çalıştırın. Kurulum Biotex Price'ı kullanıcı hesabınıza yükler ve Başlat menüsüne kısayol ekler. **Masaüstüne kısayol ekle** kutusu başlangıçta boş gelir; işaretlerseniz Biotex Price logolu masaüstü kısayolu da oluşturulur. Windows'un uygulama kaldırma ekranından kaldırılabilir.
 
 **Kişisel kullanım ve imza:** Şu an üretilmiş kurulum dosyası dijital olarak imzalı değildir. Smart App Control açıkken Windows hem kurulum dosyasını hem kurulu EXE'yi engelleyebilir; tek uygulamaya istisna tanımaz. Koruma açık kalacaksa güvenilir kod imzalama sertifikası gerekir. Kendiniz oluşturduğunuz sertifika bu engeli gidermez. Ücretsiz ve korumayı değiştirmeyen kullanım yolu, üstteki kurulumsuz tarayıcı sürümünü Microsoft Edge'de uygulama penceresi olarak açmaktır. Masaüstü kısayolunun hedefi Edge, bağımsız değişkeni `--app="file:///C:/Users/Arda%20ALACA/BTXPrice/index.html"` olabilir; proje başka konuma taşınırsa bu yol güncellenmelidir. Smart App Control'u kapatmak sistem genelindeki korumayı değiştirir ve bu yol için gerekli değildir.
 
@@ -37,9 +38,11 @@ Sağ üst köşedeki **?** düğmesi 22 adımlı etkileşimli eğitimi açar. E�
 
 1. **Ayarlar** bölümünde aylık maaşı ve aylık toplam çalışma saatini girin. Saatlik ücret maaş ÷ saat, dakikalık ücret saatlik ÷ 60, saniyelik ücret saatlik ÷ 3600 olarak hesaplanır. İşçilik ek payı varsayılan olarak `%0`dır.
 2. **Malzemeler** bölümünde metre, adet, metrekare veya kg birimini seçin. Birim fiyatını TL, EUR veya USD olarak girin. EUR ve USD dönüşümü için TCMB'nin en son yayımladığı **Döviz Satış** kuru uygulama açılınca internetten alınır. Kullanılan kaynak ve veri tarihi Ayarlar'da gösterilir; bağlantı kurulamazsa dövizli malzeme eksik verili sayılır.
-3. **Yarı mamuller** bölümünde her varyant için ayrı reçete, malzeme miktarı ve işçilik ölçümleri girin.
+3. **Yarı mamuller** bölümünde her varyant için ayrı reçete ve üretim işçiliği ölçümlerini girin. Malzeme tüketimi burada atanmaz.
 4. **Ambalaj profilleri** bölümünde seçilebilir paketleme yöntemlerini ve sürelerini tanımlayın.
-5. **Ayarlar → Vergi listesi** bölümünde vergi adı ve oranlarını tanımlayın. **Setler** bölümünün üstündeki **Hedef net kâr (%)** alanını, sipariş adedini ve uygulanacak vergileri seçin. Ayarlardaki kâr oranı yalnız yeni setler için varsayılandır; her sette değiştirilebilir. **Seti tamamla** düğmesine basmadan önce adet başına ve toplam maliyet, vergi gideri, net kâr ve vergiler dahil son satış fiyatı görünür. Son ekranda ayrıntılı döküm ve TCMB kuruyla hesaplanan EUR/USD karşılıkları gösterilir. **Kurları güncelle** düğmesi kuru yeniden alır. Vergi öncesi satış = temel maliyet × (1 + hedef kâr oranı / 100). Her vergi = vergi öncesi satış × ilgili vergi oranı / 100. Son satış fiyatı = vergi öncesi satış + seçili vergiler. Vergi gideri maliyet dökümünde ayrı gösterilir; net kâr = son satış fiyatı − temel maliyet − vergi gideri.
+5. **Setler** bölümünde içerik ekleyip yarı mamulü seçin. Kapalı içerik satırında ad, adet ve işçilik maliyeti görünür. Sağdaki oka basınca malzeme adı, ebatı, kumaş türü ve bir adet içerik için kullanılan miktarı girin. Miktarın birimi seçilen malzeme kartından gelir; setteki içerik adediyle çarpılır. Aynı yarı mamul farklı setlerde farklı malzeme tüketimine sahip olabilir.
+6. **Kargo gideri** için koli içi set adedini ve bir koli kargo maliyetini girin. Kullanılan koli sayısı `yukarı yuvarla(sipariş adedi ÷ koli içi adet)`; toplam kargo gideri bu sayıyla koli ücretinin çarpımıdır. Son koli tam dolmasa da tam koli ücreti alınır. Örneğin 14 set, 10 setlik koli ve koli başına 100 TL için 2 koli, toplam 200 TL, set başına 14,2857 TL hesaplanır. Eski sürümde yalnız toplam kargo girilmişse bu tutar saklanır; koli bilgileri girilene kadar hesap eksik verili gösterilir.
+7. **Ayarlar → Vergi listesi** bölümünde vergi adı ve oranlarını tanımlayın. **Setler** bölümünün üstündeki **Hedef net kâr (%)** alanını, sipariş adedini ve uygulanacak vergileri seçin. Ayarlardaki kâr oranı yalnız yeni setler için varsayılandır; her sette değiştirilebilir. **Seti tamamla** düğmesine basmadan önce adet başına ve toplam maliyet, vergi gideri, net kâr ve vergiler dahil son satış fiyatı görünür. Son ekranda ayrıntılı döküm ve TCMB kuruyla hesaplanan EUR/USD karşılıkları gösterilir. **Kurları güncelle** düğmesi kuru yeniden alır. Vergi öncesi satış = temel maliyet × (1 + hedef kâr oranı / 100). Her vergi = vergi öncesi satış × ilgili vergi oranı / 100. Son satış fiyatı = vergi öncesi satış + seçili vergiler. Vergi gideri maliyet dökümünde ayrı gösterilir; net kâr = son satış fiyatı − temel maliyet − vergi gideri.
 
 Set başlığındaki **Excel'e yazdır** düğmesi bir `.xlsx` raporu oluşturur. Özet, set içeriği, malzemeler, üretim işçiliği, sete dizme ve ambalaj ayrı sayfalardadır. Masaüstü uygulaması kayıt yerini seçmeniz için dosya kaydetme penceresi açar. Eğitim modunda deneme kayıtları Excel'e yazılmaz.
 

@@ -144,10 +144,10 @@ export function buildSetWorkbook(set,state,ExcelJS) {
   workbook.created=new Date();
   const calc=calculateSet(set,state), minuteRate=laborRates(state.settings)?.minute??null;
   summarySheet(workbook,set,state,calc);
-  const expenseRows=[['Kargo','Siparişin toplam kargo masrafı','Sipariş toplamı',numeric(calc.shippingTotal),numeric(number(set.orderQuantity??'1')),numeric(calc.shippingPerSet)]];
-  for(const line of calc.otherExpenseLines||[])expenseRows.push(['Diğer gider',value(line.expense.name),line.scope==='unit'?'Set başına':'Sipariş toplamı',numeric(line.amount),line.scope==='unit'?1:numeric(number(set.orderQuantity??'1')),numeric(line.perSet)]);
+  const expenseRows=[['Kargo','Koli başına sabit kargo','Koli',numeric(number(set.shippingBoxPrice)),numeric(number(set.shippingBoxSize)),numeric(calc.shippingBoxCount),numeric(calc.shippingTotal),numeric(calc.shippingPerSet)]];
+  for(const line of calc.otherExpenseLines||[])expenseRows.push(['Diğer gider',value(line.expense.name),line.scope==='unit'?'Set başına':'Sipariş toplamı',numeric(line.amount),'','',numeric(line.amount===null?null:line.scope==='unit'&&number(set.orderQuantity)>0?line.amount*number(set.orderQuantity):line.amount),numeric(line.perSet)]);
   tableSheet(workbook,'Ek Giderler','Kargo ve diğer giderlerin set başına dağılımı',set,
-    [['Tür',18],['Gider adı',32],['Kapsam',20],['Girilen tutar TL',20],['Bölünen set adedi',19],['Set başına TL',20]],expenseRows,[4,6]);
+    [['Tür',18],['Gider adı',32],['Kapsam',20],['Girilen tutar TL',20],['Koli içi set',17],['Koli sayısı',16],['Toplam TL',20],['Set başına TL',20]],expenseRows,[4,7,8]);
   const contentRows=(set.rows||[]).map((row,i)=>{
     const recipe=state.recipes.find(x=>x.id===row.recipeId),result=calc.rows[i];
     return [i+1,value(recipe?.name),value(recipe?.code),value(recipe?.lot),value(recipe?.size),
@@ -163,11 +163,11 @@ export function buildSetWorkbook(set,state,ExcelJS) {
   const materialRows=[];
   for(const row of set.rows||[]){
     const recipe=state.recipes.find(x=>x.id===row.recipeId),setQty=number(row.quantity);
-    for(const line of recipe?.materials||[]){
+    for(const line of row.materials||[]){
       const material=state.materials.find(x=>x.id===line.materialId);
       const qty=number(line.quantity),priceTL=materialPriceTL(material,state.settings);
       const total=qty!==null&&setQty!==null&&priceTL!==null?qty*setQty*priceTL:null;
-      materialRows.push([value(recipe.name),value(material?.name),value(material?.code),
+      materialRows.push([value(recipe?.name),value(material?.name),value(line.size),value(line.fabric),value(material?.code),
         numeric(qty),numeric(setQty),qty!==null&&setQty!==null?qty*setQty:'Eksik',
         value(material?.unit),value(material?.currency||'TRY'),numeric(number(material?.price)),
         numeric(number(material?.usdBasePrice)),numeric(state.settings.ratesVerified?number(state.settings.usdTry):null),numeric(priceTL),numeric(total),
@@ -175,9 +175,9 @@ export function buildSetWorkbook(set,state,ExcelJS) {
     }
   }
   tableSheet(workbook,'Malzemeler','Malzeme maliyeti ayrıntıları',set,
-    [['Yarı mamul',27],['Malzeme',27],['Stok kodu',17],['Miktar/adet',15],['Sette adet',13],
+    [['Yarı mamul',27],['Malzeme',27],['Ebat',18],['Kumaş türü',20],['Stok kodu',17],['Miktar/adet',15],['Sette adet',13],
       ['Toplam miktar',16],['Birim',14],['Giriş para birimi',17],['Girilen fiyat',17],
-      ['USD baz fiyat',18],['USD/TL kuru',14],['Güncel fiyat TL',18],['Toplam TL',18],['Durum',17]],materialRows,[12,13]);
+      ['USD baz fiyat',18],['USD/TL kuru',14],['Güncel fiyat TL',18],['Toplam TL',18],['Durum',17]],materialRows,[14,15]);
   const productionRows=[];
   for(const row of set.rows||[]){
     const recipe=state.recipes.find(x=>x.id===row.recipeId);
