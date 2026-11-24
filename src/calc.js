@@ -61,11 +61,11 @@ export function durationMinutes(entry) {
   const duration=number(entry?.duration);
   return duration!==null&&duration>=0 ? duration*(entry?.unit==='hour'?60:1) : null;
 }
+export const hasDuration = entry => entry?.duration !== '' && entry?.duration !== null && entry?.duration !== undefined;
 
 // A duration is either elapsed minutes or already-normalized person-minutes.
 export function personMinutes(entry) {
-  if (!entry || entry.status === 'notApplicable') return {value:0,missing:false,applicable:false};
-  if (entry.status === 'missing' || !entry.status) return {value:0,missing:true,applicable:true};
+  if (!hasDuration(entry)) return {value:0,missing:false,applicable:false};
   if (entry.timeType !== 'elapsed') return {value:0,missing:true,applicable:true};
   const duration = durationMinutes(entry);
   const people = number(entry.people);
@@ -87,13 +87,13 @@ export function recipeLabor(recipe) {
   const excluded = 0;
   return {value:round(selected.value),missing:selected.missing || recipe.method === 'ready',
     detailTotal:round(detailTotal),detailMissing,
-    referenceTotal:recipe.readyTotal?.status === 'known' ? round(reference.value) : null,
-    difference:recipe.readyTotal?.status === 'known' && !detailMissing ? round(detailTotal-reference.value) : null,
+    referenceTotal:hasDuration(recipe.readyTotal) && !reference.missing ? round(reference.value) : null,
+    difference:hasDuration(recipe.readyTotal) && !reference.missing && !detailMissing ? round(detailTotal-reference.value) : null,
     excluded:round(excluded)};
 }
 
 export function placementLabor(placement, quantity) {
-  if (!placement || placement.status === 'notApplicable') return {value:0,missing:false};
+  if (!hasDuration(placement)) return {value:0,missing:false,applicable:false};
   const raw = personMinutes({...placement,scope:'unit'});
   if (raw.missing) return raw;
   const n = number(quantity);
@@ -108,7 +108,7 @@ export function packageLabor(profile) {
   if (!profile) return {value:0,missing:false,parts:[]};
   const parts = [];
   const add = (label,entry,divisor=1) => {
-    if (entry?.status === 'notApplicable') return;
+    if (!hasDuration(entry)) return;
     const v=personMinutes({...entry,scope:'unit'});
     parts.push({label,value:round(v.value/divisor),missing:v.missing});
   };
@@ -117,14 +117,14 @@ export function packageLabor(profile) {
   const mode=profile.mode || 'none';
   if (mode === 'box' || mode === 'both') {
     const count=number(profile.setsPerBox);
-    if(profile.boxLabor?.status !== 'notApplicable') {
+    if(hasDuration(profile.boxLabor)) {
       add('Koli işçiliği',profile.boxLabor,count && count>0 ? count : 1);
       if (count === null || count <= 0) {parts[parts.length-1].value=0;parts[parts.length-1].missing=true;}
     }
   }
   if (mode === 'bag' || mode === 'both') {
     const count=number(profile.setsPerBag);
-    if(profile.bagLabor?.status !== 'notApplicable') {
+    if(hasDuration(profile.bagLabor)) {
       add('Torba işçiliği',profile.bagLabor,count && count>0 ? count : 1);
       if (count === null || count <= 0) {parts[parts.length-1].value=0;parts[parts.length-1].missing=true;}
     }
@@ -163,8 +163,7 @@ export function setRowPriceChange(snapshot, row, state) {
 }
 
 function timeProblems(entry, {batch=false}={}) {
-  if (!entry || entry.status === 'missing' || !entry.status) return ['ölçüm verisi eksik; doğrulanmış değer girin veya uygulanmıyor seçin'];
-  if (entry.status === 'notApplicable') return [];
+  if (!hasDuration(entry)) return [];
   const problems=[];
   if (entry.timeType!=='elapsed') problems.push('eski kişi-dakika yerine geçen süre ölçümü girin');
   if (durationMinutes(entry)===null) problems.push(entry.unit==='minuteSecond'?'geçen süreyi dk:sn biçiminde girin (ör. 2:35)':'geçerli geçen süre girin');
@@ -178,6 +177,7 @@ export function calculateSet(set, state) {
   const rate=number(state.settings.surcharge) ?? 0;
   let materials=0,production=0,placement=0,missing=!(set.rows||[]).length,excluded=0;
   const issues=[];
+  const warnings=[];
   const issue=(message,tab='sets',recordId=set.id,path='')=>issues.push({message,tab,recordId,path});
   if (!(set.rows||[]).length) issue('Set içeriği: en az bir yarı mamul ekleyin.');
   const rows=(set.rows||[]).map((row,i)=>{
@@ -188,6 +188,11 @@ export function calculateSet(set, state) {
     if (!recipe || !(qty>0)) {missing=true;return {row,missing:true};}
     const labor=recipeLabor(recipe);
     const placing=placementLabor(row.placement,qty);
+    if(recipe.method==='production' && !(recipe.operations||[]).some(hasDuration)) warnings.push(`${recipe.name}: üretim süresi girilmedi; üretim işçiliği uygulanmadı.`);
+    else if(recipe.method==='production') (recipe.operations||[]).forEach((entry,j)=>{
+      if(!hasDuration(entry))warnings.push(`${recipe.name} · ${entry.name||`işlem ${j+1}`}: süre girilmedi; işlem hesaba katılmadı.`);
+    });
+    if(!hasDuration(row.placement)) warnings.push(`${recipe.name}: sete dizme süresi girilmedi; dizme işçiliği uygulanmadı.`);
     if (labor.missing) {
       if (recipe.method==='ready') issue(`${recipe.name}: eski hazır kişi-dakika girişi kullanılmıyor; üretim ölçümüne geçin.`,'recipes',recipe.id,'method');
       const selected=recipe.method==='ready'&&recipe.readySource==='total';
@@ -223,20 +228,26 @@ export function calculateSet(set, state) {
   const profile=state.profiles.find(x=>x.id===set.profileId);
   if(set.profileId && !profile) {missing=true;issue('Set: seçili ambalaj profili bulunamadı; yeniden seçin.','sets',set.id,'profileId');}
   const packaging=packageLabor(profile);
+  if(profile){
+    for(const [field,label] of [['rollInsert','Rulo geçirme'],['rollClose','Rulo kapama'],...(['box','both'].includes(profile.mode)?[['boxLabor','Koli işçiliği']]:[]),...(['bag','both'].includes(profile.mode)?[['bagLabor','Torba işçiliği']]:[])]){
+      if(!hasDuration(profile[field]))warnings.push(`${profile.name} · ${label}: süre girilmedi; işçilik hesaba katılmadı.`);
+    }
+  }
   if (packaging.missing) {
     missing=true;
     const fields=[['rollInsert','Rulo geçirme'],['rollClose','Rulo kapama'],
       ...(['box','both'].includes(profile.mode)?[['boxLabor','Koli işçiliği']]:[]),
       ...(['bag','both'].includes(profile.mode)?[['bagLabor','Torba işçiliği']]:[])];
     for (const [field,label] of fields) timeProblems(profile[field]).forEach(problem=>issue(`${profile.name} · ${label}: ${problem}.`,'profiles',profile.id,`${field}.duration`));
-    if (['box','both'].includes(profile.mode)&&profile.boxLabor?.status!=='notApplicable'&&!(number(profile.setsPerBox)>0)) issue(`${profile.name}: koli başına set sayısını girin.`,'profiles',profile.id,'setsPerBox');
-    if (['bag','both'].includes(profile.mode)&&profile.bagLabor?.status!=='notApplicable'&&!(number(profile.setsPerBag)>0)) issue(`${profile.name}: torba başına set sayısını girin.`,'profiles',profile.id,'setsPerBag');
+    if (['box','both'].includes(profile.mode)&&hasDuration(profile.boxLabor)&&!(number(profile.setsPerBox)>0)) issue(`${profile.name}: koli başına set sayısını girin.`,'profiles',profile.id,'setsPerBox');
+    if (['bag','both'].includes(profile.mode)&&hasDuration(profile.bagLabor)&&!(number(profile.setsPerBag)>0)) issue(`${profile.name}: torba başına set sayısını girin.`,'profiles',profile.id,'setsPerBag');
   }
   let preparation=packaging.value;
   const profileKinds=new Set(packaging.parts.map(x=>x.label));
   const extras=(set.extras||[]).map((x,i)=>{
     const duplicate=profileKinds.has(x.name);
     const v=personMinutes({...x,scope:'unit'});
+    if(!duplicate && !hasDuration(x))warnings.push(`Ek set işlemi ${i+1} · ${x.name}: süre girilmedi; işçilik hesaba katılmadı.`);
     if (!duplicate) {preparation+=v.value;if(v.missing) {missing=true;timeProblems(x).forEach(problem=>issue(`Ek set işlemi ${i+1} · ${x.name}: ${problem}.`,'sets',set.id,`extras.${i}.duration`));}if(x.surchargeIncluded) excluded+=v.value;}
     return {item:x,value:v.value,missing:v.missing,duplicate};
   });
@@ -245,6 +256,8 @@ export function calculateSet(set, state) {
   const eligibleMinutes=Math.max(0,baseMinutes-excluded);
   const supplement=eligibleMinutes===0 ? 0 : minuteCost===null ? null : round(eligibleMinutes*minuteCost*rate/100,4);
   const adjustedLabor=baseLabor===null ? null : round(baseLabor+supplement,4);
+  const administrativeLabor=adjustedLabor;
+  const totalLabor=adjustedLabor===null ? null : round(adjustedLabor+administrativeLabor,4);
   const orderQuantity=number(set.orderQuantity??'1');
   const validOrder=Number.isInteger(orderQuantity)&&orderQuantity>0;
   const hasBoxSize=set.shippingBoxSize!==''&&set.shippingBoxSize!==null&&set.shippingBoxSize!==undefined;
@@ -259,9 +272,13 @@ export function calculateSet(set, state) {
     }
   }
   else if(!Number.isInteger(boxCountInput)||boxCountInput<=0){expenseMissing=true;shippingPerSet=null;shippingTotal=null;shippingBoxCount=null;issue('Kargo: koli içi adedi sıfırdan büyük tam sayı girin.','sets',set.id,'shippingBoxSize');}
-  else if(boxPriceInput===null||boxPriceInput<0){expenseMissing=true;shippingPerSet=null;shippingTotal=null;shippingBoxCount=null;issue('Kargo: bir koli kargo maliyetini sıfır veya üzeri girin.','sets',set.id,'shippingBoxPrice');}
   else if(!validOrder){expenseMissing=true;shippingPerSet=null;shippingTotal=null;shippingBoxCount=null;issue('Kargo: koli sayısını hesaplamak için sipariş adedini sıfırdan büyük tam sayı girin.','sets',set.id,'orderQuantity');}
-  else {shippingBoxCount=Math.ceil(orderQuantity/boxCountInput);shippingTotal=round(shippingBoxCount*boxPriceInput,4);shippingPerSet=round(shippingTotal/orderQuantity,4);}
+  else {
+    shippingBoxCount=Math.ceil(orderQuantity/boxCountInput);
+    if(!hasBoxPrice)warnings.push('Kargo: koli maliyeti girilmedi; kargo gideri uygulanmadı. Koli içi adet sterilizasyon için kullanılabilir.');
+    else if(boxPriceInput===null||boxPriceInput<0){expenseMissing=true;shippingPerSet=null;shippingTotal=null;issue('Kargo: bir koli kargo maliyetini sıfır veya üzeri girin.','sets',set.id,'shippingBoxPrice');}
+    else {shippingTotal=round(shippingBoxCount*boxPriceInput,4);shippingPerSet=round(shippingTotal/orderQuantity,4);}
+  }
   const otherExpenseLines=(set.otherExpenses||[]).map((expense,i)=>{
     const amount=number(expense.amount),scope=expense.scope||'total';
     let perSet=null;
@@ -272,7 +289,15 @@ export function calculateSet(set, state) {
     return {expense,amount,scope,perSet,missing:perSet===null};
   });
   const otherExpensePerSet=expenseMissing&&otherExpenseLines.some(x=>x.missing)?null:round(sum(otherExpenseLines.map(x=>x.perSet)),4);
-  const baseTotal=adjustedLabor===null||shippingPerSet===null||otherExpensePerSet===null?null:round(materials+adjustedLabor+shippingPerSet+otherExpensePerSet,4);
+  const hasSterilization=set.sterilizationPerBox!==''&&set.sterilizationPerBox!==null&&set.sterilizationPerBox!==undefined;
+  const sterilizationRate=hasSterilization?number(set.sterilizationPerBox):null;
+  let sterilizationTotal=0,sterilizationPerSet=0;
+  if(hasSterilization){
+    if(sterilizationRate===null||sterilizationRate<0){expenseMissing=true;sterilizationTotal=null;sterilizationPerSet=null;issue('Sterilizasyon: koli başına maliyeti sıfır veya üzeri girin.','sets',set.id,'sterilizationPerBox');}
+    else if(!Number.isInteger(boxCountInput)||boxCountInput<=0||!validOrder){expenseMissing=true;sterilizationTotal=null;sterilizationPerSet=null;issue('Sterilizasyon: koli içi adet ve geçerli sipariş adedi girin.','sets',set.id,'shippingBoxSize');}
+    else {sterilizationTotal=round(Math.ceil(orderQuantity/boxCountInput)*sterilizationRate,4);sterilizationPerSet=round(sterilizationTotal/orderQuantity,4);}
+  }
+  const baseTotal=totalLabor===null||shippingPerSet===null||sterilizationPerSet===null||otherExpensePerSet===null?null:round(materials+totalLabor+shippingPerSet+sterilizationPerSet+otherExpensePerSet,4);
   const profit=number(set.profitRate ?? state.settings.profit ?? '0');
   const invalidProfit=profit===null||profit<0;
   const taxes=Array.isArray(state.taxes) ? state.taxes : [];
@@ -294,8 +319,8 @@ export function calculateSet(set, state) {
   const costWithTax=baseTotal===null||taxAmount===null?null:round(baseTotal+taxAmount,4);
   const profitAmount=total===null||costWithTax===null?null:round(total-costWithTax,4);
   return {rows,extras,materials:round(materials,4),production:round(production),placement:round(placement),preparation:round(preparation),packaging,
-    baseMinutes:round(baseMinutes),baseLabor,supplement,adjustedLabor,excluded:round(excluded),
-    shippingBoxCount,shippingTotal,shippingPerSet,otherExpenseLines,otherExpensePerSet,
+    baseMinutes:round(baseMinutes),baseLabor,supplement,adjustedLabor,administrativeLabor,totalLabor,excluded:round(excluded),
+    shippingBoxCount,shippingTotal,shippingPerSet,sterilizationTotal,sterilizationPerSet,otherExpenseLines,otherExpensePerSet,
     baseTotal,beforeTax,costWithTax,profitAmount,taxAmount,taxLines,taxRate:totalRate,total,profitRate:profit,
-    issues,missing:missing||expenseMissing||(minuteCost===null&&baseMinutes>0)||invalidTax||invalidProfit,status:missing||expenseMissing||(minuteCost===null&&baseMinutes>0)||invalidTax||invalidProfit?'Eksik verili hesap':'Doğrulanmış hesap'};
+    issues,warnings,missing:missing||expenseMissing||(minuteCost===null&&baseMinutes>0)||invalidTax||invalidProfit,status:missing||expenseMissing||(minuteCost===null&&baseMinutes>0)||invalidTax||invalidProfit?'Eksik verili hesap':'Hesaplandı'};
 }

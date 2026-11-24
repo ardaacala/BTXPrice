@@ -1,5 +1,5 @@
 #define MyAppName "Biotex Price"
-#define MyAppVersion "1.1.3"
+#define MyAppVersion "1.2.0"
 
 [Setup]
 AppId={{B6C94DBB-BAAD-44D5-8230-CA430817A0AB}

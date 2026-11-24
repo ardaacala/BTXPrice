@@ -1,8 +1,8 @@
-import {calculateSet, laborRates, materialPriceTL, number, personMinutes, recipeLabor, placementLabor} from './calc.js';
+import {calculateSet, laborRates, materialPriceTL, number, personMinutes, recipeLabor, placementLabor, hasDuration} from './calc.js';
 
 const value = x => x===null || x===undefined || x==='' ? '—' : x;
 const numeric = x => x===null || x===undefined ? 'Eksik' : x;
-const labelStatus = x => x?.status==='notApplicable' ? 'Uygulanmıyor' : x?.status==='known' ? 'Doğrulanmış' : 'Veri eksik';
+const labelStatus = x => !hasDuration(x) ? 'Süre girilmedi' : personMinutes({...x,scope:'unit'}).missing ? 'Veri eksik' : 'Hesaplandı';
 const moneyFormat = '#,##0.00 "TL"';
 
 function tableSheet(workbook, name, title, set, columns, rows, moneyColumns=[]) {
@@ -93,7 +93,7 @@ function summarySheet(workbook,set,state,calc) {
   pair(24,'Temel işçilik',numeric(calc.baseLabor),moneyFormat);
   pair(25,'İşçilik ek payı',numeric(calc.supplement),moneyFormat);
   pair(26,'Düzeltilmiş işçilik',numeric(calc.adjustedLabor),moneyFormat);
-  for(const [row,label,amount] of [[20,'Kargo / set',calc.shippingPerSet],[21,'Diğer giderler / set',calc.otherExpensePerSet],[22,'Temel maliyet / set',calc.baseTotal]]){
+  for(const [row,label,amount] of [[20,'Kargo / set',calc.shippingPerSet],[21,'Sterilizasyon / set',calc.sterilizationPerSet],[22,'Diğer giderler / set',calc.otherExpensePerSet],[23,'İdari işçilik / set',calc.administrativeLabor],[24,'Toplam işçilik / set',calc.totalLabor],[25,'Temel maliyet / set',calc.baseTotal]]){
     sheet.getCell(row,3).value=label;sheet.getCell(row,3).font={name:'Aptos',bold:true,color:{argb:'FF456474'}};
     sheet.getCell(row,4).value=numeric(amount);sheet.getCell(row,4).numFmt=moneyFormat;
   }
@@ -111,7 +111,7 @@ function summarySheet(workbook,set,state,calc) {
   sheet.getCell('A34').value=`Dövizli malzemeler TCMB Döviz Satış kuru ile çevrilir. Kaynak: ${state.settings.rateSource||'TCMB Döviz Satış'}. Veri tarihi: ${state.settings.ratesVerified?state.settings.rateDate:'kur alınamadı'}.`;
   sheet.getCell('A34').font={name:'Aptos',italic:true,color:{argb:'FF597482'}};
   sheet.mergeCells('A35:E35');
-  sheet.getCell('A35').value='Temel maliyet = malzeme + düzeltilmiş işçilik + kargo + diğer giderler. Vergi öncesi satış = temel maliyet × (1 + hedef kâr / 100). Her vergi = vergi öncesi satış × oran / 100. Son fiyat = vergi öncesi satış + vergiler.';
+  sheet.getCell('A35').value='İdari işçilik = düzeltilmiş işçilik. Temel maliyet = malzeme + toplam işçilik + kargo + sterilizasyon + diğer giderler. Vergi öncesi satış = temel maliyet × (1 + hedef kâr / 100). Her vergi = vergi öncesi satış × oran / 100. Son fiyat = vergi öncesi satış + vergiler.';
   sheet.getCell('A35').alignment={wrapText:true,vertical:'middle'};
   sheet.getRow(35).height=36;
   sheet.getCell('A36').value='Seçilen vergilerin dökümü';sheet.getCell('A36').font={name:'Aptos',bold:true};
@@ -144,9 +144,9 @@ export function buildSetWorkbook(set,state,ExcelJS) {
   workbook.created=new Date();
   const calc=calculateSet(set,state), minuteRate=laborRates(state.settings)?.minute??null;
   summarySheet(workbook,set,state,calc);
-  const expenseRows=[['Kargo','Koli başına sabit kargo','Koli',numeric(number(set.shippingBoxPrice)),numeric(number(set.shippingBoxSize)),numeric(calc.shippingBoxCount),numeric(calc.shippingTotal),numeric(calc.shippingPerSet)]];
+  const expenseRows=[['Kargo','Koli başına sabit kargo','Koli',numeric(number(set.shippingBoxPrice)),numeric(number(set.shippingBoxSize)),numeric(calc.shippingBoxCount),numeric(calc.shippingTotal),numeric(calc.shippingPerSet)],['Sterilizasyon','Koli başına sterilizasyon','Koli',numeric(number(set.sterilizationPerBox)),numeric(number(set.shippingBoxSize)),numeric(calc.shippingBoxCount),numeric(calc.sterilizationTotal),numeric(calc.sterilizationPerSet)]];
   for(const line of calc.otherExpenseLines||[])expenseRows.push(['Diğer gider',value(line.expense.name),line.scope==='unit'?'Set başına':'Sipariş toplamı',numeric(line.amount),'','',numeric(line.amount===null?null:line.scope==='unit'&&number(set.orderQuantity)>0?line.amount*number(set.orderQuantity):line.amount),numeric(line.perSet)]);
-  tableSheet(workbook,'Ek Giderler','Kargo ve diğer giderlerin set başına dağılımı',set,
+  tableSheet(workbook,'Ek Giderler','Kargo, sterilizasyon ve diğer giderlerin set başına dağılımı',set,
     [['Tür',18],['Gider adı',32],['Kapsam',20],['Girilen tutar TL',20],['Koli içi set',17],['Koli sayısı',16],['Toplam TL',20],['Set başına TL',20]],expenseRows,[4,7,8]);
   const contentRows=(set.rows||[]).map((row,i)=>{
     const recipe=state.recipes.find(x=>x.id===row.recipeId),result=calc.rows[i];
