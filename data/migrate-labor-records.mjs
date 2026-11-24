@@ -44,7 +44,7 @@ for(const browser of ['edge','desktop']){
       }
     }
   }
-  const destination=join(folder,`${browser}-labor-1.1.3.json`);
+  const destination=join(folder,`${browser}-labor-1.2.0.json`);
   writeFileSync(destination,JSON.stringify(current,null,2)+'\n','utf8');
   console.log(`${browser}: ${current.recipes.length} yarı mamul, ${count(current,'operations')} işlem, ${rowCount(current)} set satırı taşındı`);
 }
