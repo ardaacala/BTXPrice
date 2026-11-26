@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - data/labor-records-1.1.4
+      - data/labor-records-1.1.41
   workflow_dispatch:
 
 permissions:
@@ -30,13 +30,13 @@ jobs:
         run: |
           if ($env:GITHUB_REF_NAME -eq 'main') {
             & powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\build-installer.ps1 -UnsignedDevelopmentBuild
-          } elseif ($env:GITHUB_REF_NAME -eq 'data/labor-records-1.1.4') {
-            & powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\build-installer.ps1 -UnsignedDevelopmentBuild -SeedDataPath 'data\edge-labor-1.1.4.json'
+          } elseif ($env:GITHUB_REF_NAME -eq 'data/labor-records-1.1.41') {
+            & powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\build-installer.ps1 -UnsignedDevelopmentBuild -SeedDataPath 'data\edge-labor-1.1.41.json'
           } else {
             throw "Desteklenmeyen dal: $env:GITHUB_REF_NAME"
           }
           if ($LASTEXITCODE -ne 0) { throw "Derleme başarısız: $LASTEXITCODE" }
-          $setup = Get-Item -LiteralPath 'dist\BTXPrice-Setup-1.1.4.exe' -ErrorAction Stop
+          $setup = Get-Item -LiteralPath 'dist\BTXPrice-Setup-1.1.41.exe' -ErrorAction Stop
           if ($setup.Length -lt 1000000) { throw 'Kurulum dosyası beklenenden küçük.' }
           if ($env:GITHUB_REF_NAME -ne 'main' -and
               -not (Test-Path -LiteralPath 'build\installer-app\seed-data.js')) {
@@ -47,20 +47,20 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $setup = 'dist\BTXPrice-Setup-1.1.4.exe'
+          $setup = 'dist\BTXPrice-Setup-1.1.41.exe'
           $hash = (Get-FileHash -LiteralPath $setup -Algorithm SHA256).Hash.ToLowerInvariant()
-          [IO.File]::WriteAllText('dist\SHA256SUMS.txt', "$hash  BTXPrice-Setup-1.1.4.exe`n")
+          [IO.File]::WriteAllText('dist\SHA256SUMS.txt', "$hash  BTXPrice-Setup-1.1.41.exe`n")
           $assets = @($setup, 'dist\SHA256SUMS.txt')
           $releaseFlags = @()
           if ($env:GITHUB_REF_NAME -eq 'main') {
-            $tag = "main-1.1.4-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT"
-            $title = 'BTX Price 1.1.4 — boş kurulum'
-            $notes = 'Windows kurulumu. Başlangıçta işletme kaydı içermez. Set başlığındaki sipariş adedi, lot, kod ve ambalaj profili tek sıradadır. Malzeme tüketimi malzeme birimine göre cm ölçülerinden hesaplanır; set adı üstte düzenlenir. Kurulumda masaüstü kısayolu isteğe bağlıdır. Dijital kod imzası yoktur; Windows güvenlik uyarısı veya Smart App Control engeli görülebilir.'
-          } elseif ($env:GITHUB_REF_NAME -eq 'data/labor-records-1.1.4') {
-            $tag = "labor-1.1.4-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT"
-            $title = 'BTX Price 1.1.4 — uyarlanmış işçilik kayıtlarıyla'
-            $notes = 'Windows kurulumu, yeni kullanıcı profilinde uyarlanmış Edge işçilik kayıtlarıyla açılır. Mevcut kayıtların üzerine yazmaz. Set başlığındaki dört alan tek sıradadır; malzeme tüketimi malzeme birimine göre cm ölçülerinden hesaplanır. Orijinal Edge ve masaüstü JSON yedekleri de sürümde bulunur. Bu özel sürüm işletme verileri içerir. Dijital kod imzası yoktur; Windows güvenlik uyarısı veya Smart App Control engeli görülebilir.'
-            $assets += @('data\edge-labor-1.1.4.json', 'data\desktop-labor-1.1.4.json', 'data\edge-2026-11-23.json', 'data\desktop-2026-11-23.json')
+            $tag = "main-1.1.41-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT"
+            $title = 'BTX Price 1.1.41 — boş verili Windows kurulumu'
+            $notes = 'Windows kurulumu. Başlangıçta işletme kaydı içermez. Malzeme, yarı mamul, işlem, ambalaj ve diğer seçenek alanlarında doğrudan yazarak arama yapılır; eski açılır seçim aracı kullanılmaz. Eğitim konusu da aranabilir. Kurulumda masaüstü kısayolu isteğe bağlıdır. Dijital kod imzası yoktur; Windows güvenlik uyarısı veya Smart App Control engeli görülebilir.'
+          } elseif ($env:GITHUB_REF_NAME -eq 'data/labor-records-1.1.41') {
+            $tag = "labor-1.1.41-$env:GITHUB_RUN_ID-$env:GITHUB_RUN_ATTEMPT"
+            $title = 'BTX Price 1.1.41 — işçilik kayıtlarıyla Windows kurulumu'
+            $notes = 'Windows kurulumu, yeni kullanıcı profilinde uyarlanmış Edge işçilik kayıtlarıyla açılır; mevcut kayıtların üzerine yazmaz. Malzeme, yarı mamul, işlem, ambalaj ve diğer seçenek alanlarında doğrudan yazarak arama yapılır. Orijinal Edge ve masaüstü JSON yedekleri sürüme eklenmiştir. Bu özel sürüm işletme verileri içerir. Dijital kod imzası yoktur; Windows güvenlik uyarısı veya Smart App Control engeli görülebilir.'
+            $assets += @('data\edge-labor-1.1.41.json', 'data\desktop-labor-1.1.41.json', 'data\edge-2026-11-23.json', 'data\desktop-2026-11-23.json')
             $releaseFlags += '--prerelease'
           } else {
             throw "Desteklenmeyen dal: $env:GITHUB_REF_NAME"

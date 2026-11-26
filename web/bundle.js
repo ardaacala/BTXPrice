@@ -852,10 +852,21 @@ function priceChangeDetail(row,index){
   const before=row.priceSnapshot;
   return `<div class="price-change-detail"><strong>Güncel yarı mamul fiyatı sete yansıtıldı</strong><div>${change.materialChanged?`<span>Malzeme: ${money4(before.material)} → ${money4(change.current.material)} / adet</span>`:''}${change.laborChanged?`<span>Üretim işçiliği: ${money4(before.labor)} → ${money4(change.current.labor)} / adet</span>`:''}</div><button type="button" class="secondary" data-action="accept-price" data-index="${index}">Yeni fiyatı referans al</button></div>`;
 }
-const options=(values,current)=>values.map(([v,t])=>`<option value="${esc(v)}" ${String(v)===String(current)?'selected':''}>${esc(t)}</option>`).join('');
 function input(label,path,value,type='text',hint='') {return `<label class="field"><span>${esc(label)}</span><input data-path="${esc(path)}" type="${type}" value="${esc(value)}" ${type==='number'?'step="any"':''} placeholder="${esc(hint)}"></label>`;}
 function durationInput(path,entry){const unit=entry.unit||'minute';const label=unit==='minuteSecond'?'Geçen süre (dk:sn)':unit==='hour'?'Geçen süre (saat)':'Geçen süre (dakika)';const hint=unit==='minuteSecond'?'ör. 2:35 (2 dk 35 sn)':unit==='hour'?'ör. 0,5':'ör. 2,5';return input(label,path,entry.duration,'text',hint);}
-function select(label,path,value,items){return `<div class="field"><span>${esc(label)}</span><div class="select-with-search"><select data-path="${esc(path)}" aria-label="${esc(label)}">${options(items,value)}</select>${items.length>1?`<button type="button" class="select-search-toggle" data-select-search-toggle aria-label="${esc(label)} seçeneklerinde ara" title="Seçeneklerde ara">⌕</button>`:''}</div>${items.length>1?`<input class="select-search-input" type="search" data-select-search placeholder="${esc(label)} içinde ara…" aria-label="${esc(label)} içinde ara" hidden>`:''}</div>`;}
+let choiceId=0;
+function select(label,path,value,items,{id}={}){
+  const listId=`choice-list-${++choiceId}`;
+  items=[...new Map(items.map(([v,t])=>[String(v),[v,t]])).values()];
+  value=value??'';
+  const selected=items.find(([v])=>String(v)===String(value));
+  const shown=selected?.[1]??(value?String(value):items[0]?.[1]??'');
+  return `<div class="field"><span>${esc(label)}</span><div class="searchable-select" data-combobox>
+    <input type="hidden" ${id?`id="${esc(id)}"`:`data-path="${esc(path)}"`} value="${esc(value??'')}">
+    <div class="searchable-select-control"><input type="search" data-combobox-input ${id?'':`data-combobox-path="${esc(path)}"`} role="combobox" aria-label="${esc(label)}" aria-autocomplete="list" aria-controls="${listId}" aria-expanded="false" autocomplete="off" spellcheck="false" value="${esc(shown)}" placeholder="Yazarak ara veya seç"><button type="button" data-combobox-toggle aria-label="${esc(label)} seçeneklerini göster" title="Seçenekleri göster">⌄</button></div>
+    <div id="${listId}" class="searchable-select-list" role="listbox" hidden>${items.map(([v,t],i)=>`<button type="button" id="${listId}-${i}" role="option" data-combobox-option data-value="${esc(v)}" aria-selected="${String(v)===String(value)}">${esc(t)}</button>`).join('')}<div class="searchable-select-empty" data-combobox-empty hidden>Sonuç bulunamadı</div></div>
+  </div></div>`;
+}
 function check(label,path,value){return `<label class="check"><input type="checkbox" data-path="${esc(path)}" ${value?'checked':''}><span>${esc(label)}</span></label>`;}
 function nav(){const tabs=[['sets','Setler'],['recipes','Yarı mamuller'],['materials','Malzemeler'],['profiles','Ambalaj profilleri'],['settings','Ayarlar']];$('#nav').innerHTML=tabs.map(([k,v])=>`<button data-tab="${k}" class="${tab===k?'active':''}">${v}</button>`).join('');}
 function renderCurrencyToggle(){
@@ -1114,10 +1125,10 @@ function renderTutorial(){
   if(!panel){panel=document.createElement('aside');panel.id='tutorial-panel';panel.setAttribute('aria-label','Etkileşimli eğitim');document.body.append(panel);}
   if(!marker){marker=document.createElement('div');marker.id='tutorial-pointer';marker.setAttribute('aria-hidden','true');marker.textContent='➜';document.body.append(marker);}
   const step=tutorialSteps[tutorial.index];
-  panel.innerHTML=`<div class="tour-top"><span class="tour-badge">EĞİTİM · KAYDEDİLMİYOR</span><button data-action="tutorial-exit" aria-label="Eğitimi kapat">×</button></div><div class="tour-progress"><span style="width:${(tutorial.index+1)/tutorialSteps.length*100}%"></span></div><label class="tour-jump-label">Konuya git<select id="tutorial-jump">${tutorialSteps.map((s,i)=>`<option value="${i}" ${i===tutorial.index?'selected':''}>${i+1}. ${esc(s.title)}</option>`).join('')}</select></label><h2>${esc(step.title)}</h2><p>${esc(step.text)}</p><div class="tour-tip"><strong>Deneyin</strong><span>${esc(step.tip)}</span></div><div class="tour-actions"><button class="secondary" data-action="tutorial-prev" ${tutorial.index===0?'disabled':''}>← Önceki</button><span>${tutorial.index+1} / ${tutorialSteps.length}</span><button class="primary" data-action="tutorial-next">${tutorial.index===tutorialSteps.length-1?'Eğitimi bitir':'Sonraki →'}</button></div>`;
+  panel.innerHTML=`<div class="tour-top"><span class="tour-badge">EĞİTİM · KAYDEDİLMİYOR</span><button data-action="tutorial-exit" aria-label="Eğitimi kapat">×</button></div><div class="tour-progress"><span style="width:${(tutorial.index+1)/tutorialSteps.length*100}%"></span></div><div class="tour-jump-label">${select('Konuya git','',String(tutorial.index),tutorialSteps.map((s,i)=>[String(i),`${i+1}. ${s.title}`]),{id:'tutorial-jump'})}</div><h2>${esc(step.title)}</h2><p>${esc(step.text)}</p><div class="tour-tip"><strong>Deneyin</strong><span>${esc(step.tip)}</span></div><div class="tour-actions"><button class="secondary" data-action="tutorial-prev" ${tutorial.index===0?'disabled':''}>← Önceki</button><span>${tutorial.index+1} / ${tutorialSteps.length}</span><button class="primary" data-action="tutorial-next">${tutorial.index===tutorialSteps.length-1?'Eğitimi bitir':'Sonraki →'}</button></div>`;
   requestAnimationFrame(()=>{
     if(!tutorial)return;
-    const targetEl=document.querySelector(step.target)||document.querySelector('[data-action="add"]');
+    const targetEl=document.querySelector(step.target)?.closest('[data-combobox]')||document.querySelector(step.target)||document.querySelector('[data-action="add"]');
     if(!targetEl){marker.hidden=true;return;}
     targetEl.classList.add('tutorial-highlight');
     const before=targetEl.getBoundingClientRect();
@@ -1185,12 +1196,12 @@ function showAppNotice(message){
 }
 function renderPreservingFocus(){
   const active=document.activeElement;
-  const path=active?.dataset?.path,id=active?.id,taxId=active?.dataset?.taxId,action=active?.dataset?.action,tabKey=active?.dataset?.tab;
+  const path=active?.dataset?.path||active?.dataset?.comboboxPath||active?.closest?.('[data-combobox]')?.querySelector('[data-path]')?.dataset.path,id=active?.id,taxId=active?.dataset?.taxId,action=active?.dataset?.action,tabKey=active?.dataset?.tab;
   const detailKey=active?.matches?.('summary')?active.closest('details[data-set-row]')?.dataset?.setRow:null;
   const start=active instanceof HTMLInputElement&&['text','search','tel','url','password'].includes(active.type)?active.selectionStart:null;
   const end=start===null?null:active.selectionEnd;
   render();
-  const next=path?[...document.querySelectorAll('[data-path]')].find(el=>el.dataset.path===path):
+  const next=path?[...document.querySelectorAll('[data-combobox-path]')].find(el=>el.dataset.comboboxPath===path)||[...document.querySelectorAll('[data-path]')].find(el=>el.dataset.path===path):
     taxId?[...document.querySelectorAll('[data-tax-id]')].find(el=>el.dataset.taxId===taxId):
     tabKey?[...document.querySelectorAll('[data-tab]')].find(el=>el.dataset.tab===tabKey):
     action?[...document.querySelectorAll('[data-action]')].find(el=>el.dataset.action===action):
@@ -1267,14 +1278,59 @@ if(tab==='materials'&&path==='currency'){
  }
 save();scheduleChangeRender();});
 document.addEventListener('input',e=>{if(e.target.id!=='search')return;const q=e.target.value.toLocaleLowerCase('tr');document.querySelectorAll('.record').forEach(el=>el.hidden=!el.textContent.toLocaleLowerCase('tr').includes(q));});
-document.addEventListener('click',e=>{const button=e.target.closest('[data-select-search-toggle]');if(!button)return;e.stopImmediatePropagation();const input=button.closest('.field').querySelector('[data-select-search]');input.hidden=!input.hidden;if(!input.hidden)input.focus();else{input.value='';input.dispatchEvent(new Event('input',{bubbles:true}));}},true);
-document.addEventListener('input',e=>{
-  if(!e.target.matches('[data-select-search]'))return;
-  const select=e.target.closest('.field').querySelector('select');
-  select._allOptions ||= [...select.options].map(option=>({value:option.value,text:option.textContent}));
-  const current=select.value,query=e.target.value.toLocaleLowerCase('tr').trim();
-  select.replaceChildren(...select._allOptions.filter(option=>!query||option.value===current||option.text.toLocaleLowerCase('tr').includes(query)).map(option=>new Option(option.text,option.value)));
-  select.value=current;
+const choiceOptions=combo=>[...combo.querySelectorAll('[data-combobox-option]')];
+function closeChoice(combo){
+  const input=combo.querySelector('[data-combobox-input]'),list=combo.querySelector('[role="listbox"]');
+  list.hidden=true;input.setAttribute('aria-expanded','false');input.removeAttribute('aria-activedescendant');
+  input.value=choiceOptions(combo).find(option=>option.dataset.value===combo.querySelector('input[type="hidden"]').value)?.textContent??combo.querySelector('input[type="hidden"]').value;
+  choiceOptions(combo).forEach(option=>{option.hidden=false;option.classList.remove('is-active');});
+}
+function filterChoice(combo,query){
+  const normalized=query.toLocaleLowerCase('tr').trim();let visible=0;
+  for(const option of choiceOptions(combo)){
+    option.hidden=!option.textContent.toLocaleLowerCase('tr').includes(normalized);
+    option.classList.remove('is-active');if(!option.hidden)visible++;
+  }
+  combo.querySelector('[data-combobox-empty]').hidden=visible>0;
+  combo.querySelector('[data-combobox-input]').removeAttribute('aria-activedescendant');
+}
+function openChoice(combo){
+  document.querySelectorAll('[data-combobox]').forEach(other=>{if(other!==combo&&!other.querySelector('[role="listbox"]').hidden)closeChoice(other);});
+  combo.querySelector('[role="listbox"]').hidden=false;
+  combo.querySelector('[data-combobox-input]').setAttribute('aria-expanded','true');
+  filterChoice(combo,'');
+}
+function activateChoice(combo,direction){
+  const visible=choiceOptions(combo).filter(option=>!option.hidden);if(!visible.length)return;
+  const current=visible.findIndex(option=>option.classList.contains('is-active'));
+  const next=visible[current<0?(direction>0?0:visible.length-1):(current+direction+visible.length)%visible.length];
+  visible.forEach(option=>option.classList.toggle('is-active',option===next));
+  combo.querySelector('[data-combobox-input]').setAttribute('aria-activedescendant',next.id);
+  next.scrollIntoView({block:'nearest'});
+}
+function chooseChoice(combo,option){
+  const stored=combo.querySelector('input[type="hidden"]');
+  stored.value=option.dataset.value;
+  choiceOptions(combo).forEach(item=>item.setAttribute('aria-selected',String(item===option)));
+  closeChoice(combo);
+  stored.dispatchEvent(new Event('change',{bubbles:true}));
+}
+document.addEventListener('focusin',e=>{if(!e.target.matches('[data-combobox-input]'))return;openChoice(e.target.closest('[data-combobox]'));e.target.select();});
+document.addEventListener('input',e=>{if(!e.target.matches('[data-combobox-input]'))return;const combo=e.target.closest('[data-combobox]');if(combo.querySelector('[role="listbox"]').hidden)openChoice(combo);filterChoice(combo,e.target.value);});
+document.addEventListener('keydown',e=>{
+  const input=e.target.closest('[data-combobox-input]');if(!input)return;
+  const combo=input.closest('[data-combobox]'),list=combo.querySelector('[role="listbox"]');
+  if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();if(list.hidden)openChoice(combo);activateChoice(combo,e.key==='ArrowDown'?1:-1);}
+  if(e.key==='Enter'){e.preventDefault();const option=choiceOptions(combo).find(item=>item.classList.contains('is-active')&&!item.hidden)||choiceOptions(combo).find(item=>!item.hidden);if(option)chooseChoice(combo,option);else closeChoice(combo);}
+  if(e.key==='Escape'){e.preventDefault();closeChoice(combo);}
+  if(e.key==='Tab')closeChoice(combo);
+});
+document.addEventListener('focusout',e=>{const combo=e.target.closest?.('[data-combobox]');if(combo&&!combo.contains(e.relatedTarget))closeChoice(combo);});
+document.addEventListener('click',e=>{
+  const option=e.target.closest('[data-combobox-option]');if(option){chooseChoice(option.closest('[data-combobox]'),option);return;}
+  const toggle=e.target.closest('[data-combobox-toggle]');if(toggle){const combo=toggle.closest('[data-combobox]'),wasOpen=!combo.querySelector('[role="listbox"]').hidden;if(wasOpen)closeChoice(combo);else{openChoice(combo);combo.querySelector('[data-combobox-input]').focus();}return;}
+  const input=e.target.closest('[data-combobox-input]');if(input){const combo=input.closest('[data-combobox]');if(combo.querySelector('[role="listbox"]').hidden)openChoice(combo);return;}
+  if(!e.target.closest('[data-combobox]'))document.querySelectorAll('[data-combobox]').forEach(combo=>{if(!combo.querySelector('[role="listbox"]').hidden)closeChoice(combo);});
 });
 document.addEventListener('click',e=>{const button=e.target.closest('[data-action="display-currency"]');if(!button)return;e.stopImmediatePropagation();state.settings.displayCurrency=button.dataset.currency;save();render();},true);
 document.addEventListener('click',e=>{const b=e.target.closest('[data-action],[data-tab]');if(!b)return;const action=b.dataset.action;if(action==='toggle-detailed-view')return;if(action==='toggle-sidebar'){sidebarCollapsed=!sidebarCollapsed;$('#app').classList.toggle('sidebar-collapsed',sidebarCollapsed);const content=b.closest('.sidebar')?.querySelector('.sidebar-content');if(content)content.inert=sidebarCollapsed;b.setAttribute('aria-expanded',String(!sidebarCollapsed));b.setAttribute('aria-label',sidebarCollapsed?'Sol listeyi aç':'Sol listeyi daralt');b.title=sidebarCollapsed?'Listeyi aç':'Listeyi daralt';b.textContent=sidebarCollapsed?'☰':'‹';return;}if(action==='tutorial-start'){startTutorial();return;}if(action==='tutorial-exit'){endTutorial();return;}if(action==='tutorial-next'){tutorial.index===tutorialSteps.length-1?endTutorial():goTutorial(tutorial.index+1);return;}if(action==='tutorial-prev'){goTutorial(tutorial.index-1);return;}if(b.dataset.tab){tab=b.dataset.tab;finalizing=false;render();return;}if(action==='edit-set-name'){const set=target('sets');if(set)appDialog({title:'Set adını düzenle',inputLabel:'Set adı',inputValue:set.name,confirmLabel:'Kaydet',onConfirm:name=>{if(!name)return;set.name=name;save();render();}});return;}if(action==='finalize'){finalizing=true;render();return;}if(action==='finalize-back'){finalizing=false;render();return;}if(action==='refresh-rates'){refreshRates();return;}if(action==='fix-missing'){tab=b.dataset.fixTab;selected[tab]=b.dataset.fixId||selected[tab];finalizing=false;render();const path=b.dataset.fixPath;const field=path?[...document.querySelectorAll('[data-path]')].find(el=>el.dataset.path===path):null;field?.closest('details[data-set-row]')?.setAttribute('open','');(field||document.querySelector('.editor'))?.scrollIntoView({block:'center',behavior:'smooth'});field?.focus();return;}if(action==='convert-recipe'){const recipe=target('recipes');recipe.method='production';save();render();return;}if(action==='convert-time'){const item=getPath(target(tab),b.dataset.path);if(item){item.timeType='elapsed';item.status='missing';item.duration='';item.people='';if(tab==='recipes')item.output='';save();render();}return;}if(action==='accept-price'){const row=target('sets')?.rows?.[Number(b.dataset.index)];const snapshot=setRowUnitCosts(row,state);if(row&&snapshot){row.priceSnapshot=snapshot;save();render();}return;}if(action==='excel-export'){if(tutorial||!target('sets'))return;exportSetXlsx(target('sets')).catch(err=>showAppNotice(`Excel raporu oluşturulamadı: ${err.message}`));return;}const kind=b.dataset.kind;let obj=target(tab),i=Number(b.dataset.index);if(action==='select'){selected[kind]=b.dataset.id;finalizing=false;render();return;}if(action==='add'){const v=kind==='sets'?blankSet():kind==='recipes'?blankRecipe():kind==='profiles'?blankProfile():{id:id(),name:'Yeni malzeme',code:'',unit:'adet',price:'',currency:'TRY'};state[kind].push(v);selected[kind]=v.id;finalizing=false;}
@@ -1288,7 +1344,7 @@ if(action==='add-set-row'){
   obj.rows.push({recipeId:'',quantity:'1',materials:[],placement:{...emptyTime(),status:'notApplicable',coverage:'item',sets:''}});
   const rowIndex=obj.rows.length-1;
   expandedSetRows.add(obj.id+':'+rowIndex);
-  setTimeout(()=>document.querySelector(`[data-path="rows.${rowIndex}.recipeId"]`)?.focus(),0);
+  setTimeout(()=>document.querySelector(`[data-combobox-path="rows.${rowIndex}.recipeId"]`)?.focus(),0);
 }
 if(action==='remove-set-row')obj.rows.splice(i,1);
 if(action==='add-extra')obj.extras.push({name:'Hazırlık, taşıma ve yükleme',...emptyTime()});
@@ -1303,6 +1359,7 @@ document.addEventListener('click',()=>{
   if(needsRender)setTimeout(()=>{if(renderVersion===version)renderPreservingFocus();},0);
 });
 document.addEventListener('dblclick',e=>{if(!e.target.closest('.record-list'))return;});
+document.addEventListener('click',e=>{const fix=e.target.closest('[data-action="fix-missing"]');if(!fix?.dataset.fixPath)return;setTimeout(()=>{[...document.querySelectorAll('[data-combobox-path]')].find(el=>el.dataset.comboboxPath===fix.dataset.fixPath)?.focus({preventScroll:true});},0);},true);
 window.addEventListener('keydown',e=>{if(e.ctrlKey&&e.key==='Enter'&&tab==='recipes'&&!document.querySelector('#app-dialog')){e.preventDefault();addCustomOperation();}});
 // Add a custom operation directly beside the standard list.
 document.addEventListener('click',e=>{if(e.target.id==='custom-operation')addCustomOperation();});

@@ -2,16 +2,18 @@
 
 ## GitHub'dan Windows kurulumu
 
-Özel deponun [Releases](https://github.com/ardaacala/BTXPrice/releases) bölümünden istediğiniz sürümün `BTXPrice-Setup-1.1.4.exe` dosyasını indirin. Kurulum sihirbazında isteğe bağlı masaüstü kısayolunu seçebilirsiniz.
+Özel deponun [Releases](https://github.com/ardaacala/BTXPrice/releases) bölümünden istediğiniz sürümün `BTXPrice-Setup-1.1.41.exe` dosyasını indirin. Kurulum sihirbazında isteğe bağlı masaüstü kısayolunu seçebilirsiniz.
 
 - **Boş kurulum (main):** İşletme kayıtları olmadan başlar.
-- **Uyarlanmış işçilik kayıtlarıyla (data/labor-records-1.1.4):** 23 Kasım Edge kayıtlarının güncel set malzemesi ve koli kargosu yapısına dönüştürülmüş kopyasıyla başlar. Masaüstü kaydı ayrı JSON olarak indirilebilir. Mevcut BTXPrice kayıtlarının üzerine yazmaz. Eski toplam kargo tutarından koli kapasitesi ve koli fiyatı çıkarılamaz; bu alanlar tamamlanana kadar ilgili set eksik verili görünür.
+- **Uyarlanmış işçilik kayıtlarıyla (data/labor-records-1.1.41):** 23 Kasım Edge kayıtlarının güncel set malzemesi ve koli kargosu yapısına dönüştürülmüş kopyasıyla başlar. Masaüstü kaydı ayrı JSON olarak indirilebilir. Mevcut BTXPrice kayıtlarının üzerine yazmaz. Eski toplam kargo tutarından koli kapasitesi ve koli fiyatı çıkarılamaz; bu alanlar tamamlanana kadar ilgili set eksik verili görünür.
 
 `data/local-records-2026-11-23` dalındaki eski sürüm arşiv olarak kalır.
 
 İki kurulum dosyası GitHub Actions ile Windows üzerinde oluşturulur ve ayrı sürümler olarak yayımlanır. Depo özel erişimlidir; indiren kişinin erişim izni olmalıdır. Dosyalar dijital olarak imzalı değildir; Windows güvenlik uyarısı veya Smart App Control engeli görülebilir.
 
 Set ve yarı mamul maliyetlerini hesaplayan uygulama. Şu an doğrudan tarayıcıda, sunucu kurmadan kullanılabilir.
+
+Seçenekli alanlarda doğrudan görünen arama kutusuna yazın; liste yazdıkça süzülür. Ok tuşları ve Enter ile veya sonuç satırına tıklayarak seçim yapabilirsiniz. Escape mevcut seçimi korur. Malzeme, yarı mamul, işlem, ambalaj, birim ve eğitim konusu aynı arama alanını kullanır.
 
 ## Kurulumsuz tarayıcı sürümü
 
@@ -23,7 +25,7 @@ Tarayıcı verileri kendi yerel depolamasında tutar. Başka tarayıcıya veya f
 
 ## Windows kurulumu
 
-`dist/BTXPrice-Setup-1.1.4.exe` dosyasını çalıştırın. Kurulum Biotex Price'ı kullanıcı hesabınıza yükler ve Başlat menüsüne kısayol ekler. **Masaüstüne kısayol ekle** kutusu başlangıçta boş gelir; işaretlerseniz Biotex Price logolu masaüstü kısayolu da oluşturulur. Windows'un uygulama kaldırma ekranından kaldırılabilir.
+`dist/BTXPrice-Setup-1.1.41.exe` dosyasını çalıştırın. Kurulum Biotex Price'ı kullanıcı hesabınıza yükler ve Başlat menüsüne kısayol ekler. **Masaüstüne kısayol ekle** kutusu başlangıçta boş gelir; işaretlerseniz Biotex Price logolu masaüstü kısayolu da oluşturulur. Windows'un uygulama kaldırma ekranından kaldırılabilir.
 
 **Kişisel kullanım ve imza:** Şu an üretilmiş kurulum dosyası dijital olarak imzalı değildir. Smart App Control açıkken Windows hem kurulum dosyasını hem kurulu EXE'yi engelleyebilir; tek uygulamaya istisna tanımaz. Koruma açık kalacaksa güvenilir kod imzalama sertifikası gerekir. Kendiniz oluşturduğunuz sertifika bu engeli gidermez. Ücretsiz ve korumayı değiştirmeyen kullanım yolu, üstteki kurulumsuz tarayıcı sürümünü Microsoft Edge'de uygulama penceresi olarak açmaktır. Masaüstü kısayolunun hedefi Edge, bağımsız değişkeni `--app="file:///C:/Users/Arda%20ALACA/BTXPrice/index.html"` olabilir; proje başka konuma taşınırsa bu yol güncellenmelidir. Smart App Control'u kapatmak sistem genelindeki korumayı değiştirir ve bu yol için gerekli değildir.
 

@@ -115,12 +115,18 @@
 .material-currency-grid>div{border:1px solid #dceee7;border-radius:8px;background:#f4faf7;padding:12px;min-width:0}
 .material-currency-grid small,.material-currency-grid strong{display:block}
 .material-currency-grid strong{margin-top:6px;overflow-wrap:anywhere;font-size:14px}
-.select-with-search{display:flex;position:relative;min-width:0}
-.select-with-search select{padding-right:34px}
-.select-search-toggle{position:absolute;right:2px;top:2px;height:35px;width:30px;border:0;background:#fff;color:#168368;border-radius:5px;font-size:20px;line-height:1}
-.select-search-toggle:hover{background:#e7f6f0}
-.field .select-search-input{height:32px;margin-top:5px;background:#f6fbf9;font-size:11px}
-.field .select-search-input[hidden]{display:none}
+.searchable-select{min-width:0;width:100%}
+.searchable-select-control{position:relative}
+.field .searchable-select-control input{padding-right:38px}
+.searchable-select-control input::-webkit-search-cancel-button{display:none}
+.searchable-select-control button{position:absolute;right:2px;top:2px;height:35px;width:34px;border:0;background:transparent;color:#168368;border-radius:5px;font-size:20px;line-height:1}
+.searchable-select-control button:hover{background:#e7f6f0}
+.searchable-select-list{margin-top:4px;max-height:210px;overflow-y:auto;border:1px solid #cfe4db;border-radius:7px;background:#fff;box-shadow:0 8px 20px #153c3317;padding:4px}
+.searchable-select-list[hidden],.searchable-select-list [hidden]{display:none!important}
+.searchable-select-list [role="option"]{display:block;width:100%;border:0;border-radius:5px;background:transparent;padding:8px 9px;text-align:left;color:#24394a;font-size:12px;line-height:1.35;white-space:normal}
+.searchable-select-list [role="option"]:hover,.searchable-select-list [role="option"].is-active{background:#e7f6f0;color:#087f64}
+.searchable-select-list [role="option"][aria-selected="true"]{font-weight:700}
+.searchable-select-empty{padding:9px;color:#718894;font-size:12px}
 @media(max-width:1050px){.topbar-tools{gap:6px}.currency-toggle button{width:27px}}
 .set-head-buttons{display:flex;align-items:flex-start;gap:8px;flex-wrap:wrap}
 .export-currency{display:grid;gap:6px;min-width:124px}
