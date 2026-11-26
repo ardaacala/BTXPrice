@@ -1,4 +1,4 @@
-import {calculateSet, laborRates, materialPriceTL, number, personMinutes, recipeLabor, placementLabor, hasDuration} from './calc.js';
+import {calculateSet, laborRates, materialPriceTL, materialLineArea, materialLineLengthMeters, materialLineQuantity, number, personMinutes, recipeLabor, placementLabor, hasDuration} from './calc.js';
 
 const value = x => x===null || x===undefined || x==='' ? '—' : x;
 const numeric = x => x===null || x===undefined ? 'Eksik' : x;
@@ -165,9 +165,12 @@ export function buildSetWorkbook(set,state,ExcelJS) {
     const recipe=state.recipes.find(x=>x.id===row.recipeId),setQty=number(row.quantity);
     for(const line of row.materials||[]){
       const material=state.materials.find(x=>x.id===line.materialId);
-      const qty=number(line.quantity),priceTL=materialPriceTL(material,state.settings);
+      const qty=materialLineQuantity(line,material),priceTL=materialPriceTL(material,state.settings);
       const total=qty!==null&&setQty!==null&&priceTL!==null?qty*setQty*priceTL:null;
-      materialRows.push([value(recipe?.name),value(material?.name),value(line.size),value(line.fabric),value(material?.code),
+      const area=material?.unit==='metrekare'?materialLineArea(line):null;
+      const length=material?.unit==='metre'?materialLineLengthMeters(line):null;
+      const measure=area!==null?`${line.widthCm} × ${line.lengthCm} cm`:length!==null?`${line.meterLengthCm} cm`:line.size;
+      materialRows.push([value(recipe?.name),value(material?.name),value(measure),value(area??length),value(material?.code),
         numeric(qty),numeric(setQty),qty!==null&&setQty!==null?qty*setQty:'Eksik',
         value(material?.unit),value(material?.currency||'TRY'),numeric(number(material?.price)),
         numeric(number(material?.usdBasePrice)),numeric(state.settings.ratesVerified?number(state.settings.usdTry):null),numeric(priceTL),numeric(total),
@@ -175,7 +178,7 @@ export function buildSetWorkbook(set,state,ExcelJS) {
     }
   }
   tableSheet(workbook,'Malzemeler','Malzeme maliyeti ayrıntıları',set,
-    [['Yarı mamul',27],['Malzeme',27],['Ebat',18],['Kumaş türü',20],['Stok kodu',17],['Miktar/adet',15],['Sette adet',13],
+    [['Yarı mamul',27],['Malzeme',27],['Ölçü (cm)',18],['Ölçüden miktar',20],['Stok kodu',17],['Miktar/adet',15],['Sette adet',13],
       ['Toplam miktar',16],['Birim',14],['Giriş para birimi',17],['Girilen fiyat',17],
       ['USD baz fiyat',18],['USD/TL kuru',14],['Güncel fiyat TL',18],['Toplam TL',18],['Durum',17]],materialRows,[14,15]);
   const productionRows=[];

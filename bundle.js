@@ -21,9 +21,20 @@ function migrateLegacySetData(data) {
     }
     delete set.shippingTotal;
     for(const row of set.rows||[]){
-      if(Array.isArray(row.materials))continue;
-      const recipe=data.recipes?.find(x=>x.id===row.recipeId);
-      row.materials=(recipe?.materials||[]).map(line=>({...line,size:recipe.size||'',fabric:recipe.fabric||''}));
+      if(!Array.isArray(row.materials)){
+        const recipe=data.recipes?.find(x=>x.id===row.recipeId);
+        row.materials=(recipe?.materials||[]).map(line=>({...line,size:recipe.size||'',fabric:recipe.fabric||''}));
+      }
+      for(const line of row.materials){
+        if(Object.hasOwn(line,'widthCm') || Object.hasOwn(line,'lengthCm'))continue;
+        if(data.materials?.find(x=>x.id===line.materialId)?.unit!=='metrekare')continue;
+        const match=String(line.size||'').trim().match(/^(\d+(?:[.,]\d+)?)\s*[x×]\s*(\d+(?:[.,]\d+)?)\s*(?:cm)?$/i);
+        if(!match)continue;
+        const width=number(match[1]),length=number(match[2]),quantity=number(line.quantity);
+        if(width>0 && length>0 && quantity!==null && Math.abs(round(width*length/10000,6)-quantity)<0.000001){
+          line.widthCm=String(width);line.lengthCm=String(length);
+        }
+      }
     }
   }
   return data;
@@ -51,6 +62,24 @@ function materialPriceTL(material, settings) {
   if (settings?.ratesVerified !== true) return null;
   const rate=number(currency==='EUR'?settings?.eurTry:currency==='USD'?settings?.usdTry:null);
   return rate!==null && rate>0 ? price*rate : null;
+}
+
+function materialLineArea(line) {
+  const width=number(line?.widthCm), length=number(line?.lengthCm);
+  return width>0 && length>0 ? round(width*length/10000,6) : null;
+}
+
+function materialLineLengthMeters(line) {
+  const length=number(line?.meterLengthCm);
+  return length>0 ? round(length/100,6) : null;
+}
+
+function materialLineQuantity(line, material) {
+  if(material?.unit==='metrekare' && (Object.hasOwn(line,'widthCm') || Object.hasOwn(line,'lengthCm')))
+    return materialLineArea(line);
+  if(material?.unit==='metre' && Object.hasOwn(line,'meterLengthCm'))
+    return materialLineLengthMeters(line);
+  return number(line?.quantity);
 }
 
 function durationMinutes(entry) {
@@ -141,7 +170,7 @@ function setRowUnitCosts(row, state) {
   let material=0;
   for (const line of row.materials||[]) {
     const item=state.materials.find(x=>x.id===line.materialId);
-    const quantity=number(line.quantity),price=materialPriceTL(item,state.settings);
+    const quantity=materialLineQuantity(line,item),price=materialPriceTL(item,state.settings);
     if (!item||quantity===null||quantity<0||price===null) return null;
     material+=quantity*price;
   }
@@ -208,9 +237,13 @@ function calculateSet(set, state) {
     let rowMaterialMissing=false;
     const material=sum((row.materials||[]).map((line,j)=>{
       const m=state.materials.find(x=>x.id===line.materialId);
-      const amount=number(line.quantity), price=materialPriceTL(m,state.settings);
+      const amount=materialLineQuantity(line,m), price=materialPriceTL(m,state.settings);
       if (!m) issue(`${recipe.name} · malzeme ${j+1}: malzeme seçin.`,'sets',set.id,`rows.${i}.materials.${j}.materialId`);
-      if (amount===null || amount<0) issue(`${recipe.name} · malzeme ${j+1}: geçerli miktar girin.`,'sets',set.id,`rows.${i}.materials.${j}.quantity`);
+      if (amount===null || amount<0) {
+        const area=m?.unit==='metrekare' && (Object.hasOwn(line,'widthCm') || Object.hasOwn(line,'lengthCm'));
+        const length=m?.unit==='metre' && Object.hasOwn(line,'meterLengthCm');
+        issue(`${recipe.name} · malzeme ${j+1}: ${area?'iki kenarı da cm cinsinden sıfırdan büyük girin':length?'uzunluğu cm cinsinden sıfırdan büyük girin':'geçerli miktar girin'}.`,'sets',set.id,`rows.${i}.materials.${j}.${area?'widthCm':length?'meterLengthCm':'quantity'}`);
+      }
       if (m && price===null) {
         const reason=number(m.price)===null||number(m.price)<0?'birim fiyatını girin':
           !['metre','adet','metrekare','kg'].includes(m.unit)?'geçerli malzeme birimi seçin':
@@ -335,14 +368,14 @@ function tutorialState(realSettings={}) {
     taxes:[{id:'tutorial-tax-1',name:'[Eğitim] KDV',rate:'20'}],
     operationNames:[...operationNames],
     fabricTypes:['Örnek kumaş'],
-    materials:[{id:'tutorial-material-1',name:'[Eğitim] Örnek kumaş',code:'ORNEK-001',fabric:'Örnek kumaş',unit:'adet',price:'50',currency:'TRY'}],
+    materials:[{id:'tutorial-material-1',name:'[Eğitim] Örnek kumaş',code:'ORNEK-001',fabric:'Örnek kumaş',unit:'metrekare',price:'12.5',currency:'TRY'}],
     recipes:[{id:'tutorial-recipe-1',name:'[Eğitim] Alet masa örtüsü',code:'ORNEK-200',lot:'DENEME',size:'200 × 200 cm',fabric:'Örnek kumaş',gsm:'56',reinforcement:'Yok',panel:'Yok',folded:'yes',method:'production',readySource:'details',operations:[
       {name:'Pastal açma / kesim',...time('0,267'),description:'Örnek geçen süre ölçümü'},
       {name:'Bantlama ve ek bantlama',...time('0,14')},
       {name:'Katlama',...time('0,88')}
     ],readyTotal:time('1,287')}],
     profiles:[{id:'tutorial-profile-1',name:'[Eğitim] 20 setlik koli',bundleType:'Örnek bohça',bundleSize:'200 × 200 cm',rollSize:'50 × 70 cm',mode:'box',setsPerBox:'20',setsPerBag:'',rollInsert:time('','notApplicable'),rollClose:time('','notApplicable'),boxLabor:time('6'),bagLabor:time('','notApplicable')}],
-    sets:[{id:'tutorial-set-1',name:'[Eğitim] Örnek set',code:'SET-DENEME',lot:'DENEME',profileId:'tutorial-profile-1',orderQuantity:'10',profitRate:'10',shippingBoxSize:'',shippingBoxPrice:'',sterilizationPerBox:'',otherExpenses:[],rows:[{recipeId:'tutorial-recipe-1',quantity:'1',materials:[{materialId:'tutorial-material-1',size:'200 × 200 cm',fabric:'Örnek kumaş',quantity:'1'}],placement:{...time('5,5'),coverage:'sets',sets:'100',description:'100 set için toplu ölçüm'}}],extras:[],taxIds:[]}]
+    sets:[{id:'tutorial-set-1',name:'[Eğitim] Örnek set',code:'SET-DENEME',lot:'DENEME',profileId:'tutorial-profile-1',orderQuantity:'10',profitRate:'10',shippingBoxSize:'',shippingBoxPrice:'',sterilizationPerBox:'',otherExpenses:[],rows:[{recipeId:'tutorial-recipe-1',quantity:'1',materials:[{materialId:'tutorial-material-1',widthCm:'200',lengthCm:'200',quantity:'4'}],placement:{...time('5,5'),coverage:'sets',sets:'100',description:'100 set için toplu ölçüm'}}],extras:[],taxIds:[]}]
   };
 }
 
@@ -360,8 +393,8 @@ const tutorialSteps=[
   {tab:'sets',target:'.status',title:'10 · Eksik verileri bulma',text:'Set fiyatı hesaplanmıyorsa eksik veri panelinde kayıt ve alan adıyla nedenleri görünür. Alana git düğmesi ilgili formu açar. Süre hiç girilmediyse işçilik uygulanmaz ve küçük bir uyarı çıkar; süre girilip gereken kişi sayısı boş bırakılırsa hesap eksik verili olur.',tip:'Bir işlemin çalışan kişi sayısını boş bırakıp eksik alanın nasıl gösterildiğine bakın.',prepare:'sampleSet'},
   {tab:'profiles',target:'[data-action="add"]',title:'11 · Ambalaj profilleri',text:'Bohça ve rulo ölçülerini, rulo geçirme/kapama sürelerini ve koli ya da torba işçiliğini bir profilde saklayın. Paketleme yönteminde koli, torba veya her ikisini açıkça seçin.',tip:'Yeni bir profil ekleyip paketleme yöntemini deneyebilirsiniz.'},
   {tab:'profiles',target:'[data-path="setsPerBox"]',title:'12 · Paket başına dağıtım',text:'Koli veya torba başına işçilik, içindeki set sayısına bölünür. Örnekte 6 kişi-dakika / 20 set = set başına 0,3 kişi-dakika.',tip:'Örnek profilde koli adedini veya işçilik süresini değiştirin.'},
-  {tab:'sets',target:'[data-action="add"]',title:'13 · Set oluşturma',text:'Set adı, kodu ve lotunu girin; ambalaj profilini seçin. Profil değiştirmek üretim reçetesini veya malzeme fiyatını değiştirmez.',tip:'İsterseniz + düğmesiyle deneme seti oluşturun.'},
-  {tab:'sets',target:'[data-action="add-set-row"]',title:'14 · Set içeriği',text:'İçerik ekle ile yarı mamul seçin. Kapalı satırda ürün adı, adet ve işçilik maliyeti görünür. Oka basınca işlem dökümü, malzemeler ve sete dizme ölçümü açılır. Malzemenin adını, ebatını, kumaş türünü ve bir adet içerik için tüketimini burada girin.',tip:'Bir içerik satırını açıp malzeme ekleyin; adet değiştiğinde malzeme maliyetinin nasıl değiştiğini izleyin.'},
+  {tab:'sets',target:'[data-action="add"]',title:'13 · Set oluşturma',text:'Yeni set oluşturun. Üst başlıkta kaleme basarak adını düzenleyin; sipariş adedi, lot, kod ve ambalaj profilini aynı alandan belirleyin. Profil değiştirmek üretim reçetesini veya malzeme fiyatını değiştirmez.',tip:'İsterseniz + düğmesiyle deneme seti oluşturup üstteki alanları değiştirin.'},
+  {tab:'sets',target:'[data-action="add-set-row"]',title:'14 · Set içeriği',text:'İçerik ekle ile yarı mamul seçin. Kapalı satırda ürün adı, adet ve işçilik maliyeti görünür. Oka basınca işlem dökümü, malzemeler ve sete dizme ölçümü açılır. Metrekare birimli malzemede iki kenarı cm, metre birimli malzemede yalnız uzunluğu cm olarak girin. Adet ve kg tüketimini doğrudan kendi biriminde yazın.',tip:'Bir içerik satırını açın; 150 × 240 cm için 3,6 m², 190 cm uzunluk için 1,9 metre hesabını inceleyin.'},
   {tab:'sets',target:'.sidebar-toggle',title:'14a · Sol listeyi daraltma',text:'Sol üstteki ok düğmesi set listesini daraltır ve düzenleme alanını genişletir. Daralan şeritteki düğmeye basarak listeyi yeniden açabilirsiniz. Geçiş yumuşaktır; sistemde hareketi azalt ayarı açıksa animasyon kullanılmaz.',tip:'Sol listeyi kapatıp tekrar açın.'},
   {tab:'sets',target:'.detail-switch',title:'14b · İçerik ayrıntıları',text:'Detaylı görünüm açıkken içerik satırındaki işlem dökümü bir yarı mamul, bir set ve toplam sipariş tutarlarını gösterir. Anahtarı kapatırsanız dökümde yalnız toplam sipariş sütunu kalır. İçerik düzenleme alanları her iki durumda da kullanılabilir.',tip:'Anahtarı kapatıp bir içerik satırını açın; sonra tekrar açın.',prepare:'setRow'},
   {tab:'sets',target:'[data-path="rows.0.placement.coverage"]',title:'15 · Sete dizme kapsamı',text:'Ölçümün bir içeriği, satırdaki tüm adetleri veya belirli sayıda seti kapsadığını seçin. Tüm satırı kapsayan ölçümü içerik adediyle tekrar çarpmayın. 100 set için 5,5 kişi-dakika = 0,055 kişi-dakika/set.',tip:'Kapsamı değiştirip satırdaki dizme sonucunu inceleyin.',prepare:'setRow'},
@@ -541,9 +574,12 @@ function buildSetWorkbook(set,state,ExcelJS) {
     const recipe=state.recipes.find(x=>x.id===row.recipeId),setQty=number(row.quantity);
     for(const line of row.materials||[]){
       const material=state.materials.find(x=>x.id===line.materialId);
-      const qty=number(line.quantity),priceTL=materialPriceTL(material,state.settings);
+      const qty=materialLineQuantity(line,material),priceTL=materialPriceTL(material,state.settings);
       const total=qty!==null&&setQty!==null&&priceTL!==null?qty*setQty*priceTL:null;
-      materialRows.push([value(recipe?.name),value(material?.name),value(line.size),value(line.fabric),value(material?.code),
+      const area=material?.unit==='metrekare'?materialLineArea(line):null;
+      const length=material?.unit==='metre'?materialLineLengthMeters(line):null;
+      const measure=area!==null?`${line.widthCm} × ${line.lengthCm} cm`:length!==null?`${line.meterLengthCm} cm`:line.size;
+      materialRows.push([value(recipe?.name),value(material?.name),value(measure),value(area??length),value(material?.code),
         numeric(qty),numeric(setQty),qty!==null&&setQty!==null?qty*setQty:'Eksik',
         value(material?.unit),value(material?.currency||'TRY'),numeric(number(material?.price)),
         numeric(number(material?.usdBasePrice)),numeric(state.settings.ratesVerified?number(state.settings.usdTry):null),numeric(priceTL),numeric(total),
@@ -551,7 +587,7 @@ function buildSetWorkbook(set,state,ExcelJS) {
     }
   }
   tableSheet(workbook,'Malzemeler','Malzeme maliyeti ayrıntıları',set,
-    [['Yarı mamul',27],['Malzeme',27],['Ebat',18],['Kumaş türü',20],['Stok kodu',17],['Miktar/adet',15],['Sette adet',13],
+    [['Yarı mamul',27],['Malzeme',27],['Ölçü (cm)',18],['Ölçüden miktar',20],['Stok kodu',17],['Miktar/adet',15],['Sette adet',13],
       ['Toplam miktar',16],['Birim',14],['Giriş para birimi',17],['Girilen fiyat',17],
       ['USD baz fiyat',18],['USD/TL kuru',14],['Güncel fiyat TL',18],['Toplam TL',18],['Durum',17]],materialRows,[14,15]);
   const productionRows=[];
@@ -820,10 +856,6 @@ const options=(values,current)=>values.map(([v,t])=>`<option value="${esc(v)}" $
 function input(label,path,value,type='text',hint='') {return `<label class="field"><span>${esc(label)}</span><input data-path="${esc(path)}" type="${type}" value="${esc(value)}" ${type==='number'?'step="any"':''} placeholder="${esc(hint)}"></label>`;}
 function durationInput(path,entry){const unit=entry.unit||'minute';const label=unit==='minuteSecond'?'Geçen süre (dk:sn)':unit==='hour'?'Geçen süre (saat)':'Geçen süre (dakika)';const hint=unit==='minuteSecond'?'ör. 2:35 (2 dk 35 sn)':unit==='hour'?'ör. 0,5':'ör. 2,5';return input(label,path,entry.duration,'text',hint);}
 function select(label,path,value,items){return `<div class="field"><span>${esc(label)}</span><div class="select-with-search"><select data-path="${esc(path)}" aria-label="${esc(label)}">${options(items,value)}</select>${items.length>1?`<button type="button" class="select-search-toggle" data-select-search-toggle aria-label="${esc(label)} seçeneklerinde ara" title="Seçeneklerde ara">⌕</button>`:''}</div>${items.length>1?`<input class="select-search-input" type="search" data-select-search placeholder="${esc(label)} içinde ara…" aria-label="${esc(label)} içinde ara" hidden>`:''}</div>`;}
-function fabricSelect(path,value){
-  const values=[...new Set([...(state.fabricTypes||[]),...state.materials.map(x=>x.fabric),...state.recipes.map(x=>x.fabric),...state.sets.flatMap(set=>set.rows?.flatMap(row=>row.materials?.map(x=>x.fabric)||[])||[]),value].filter(Boolean))].sort((a,b)=>a.localeCompare(b,'tr'));
-  return select('Kumaş türü',path,value,[['','Seçin / uygulanmıyor'],...values.map(x=>[x,x])]);
-}
 function check(label,path,value){return `<label class="check"><input type="checkbox" data-path="${esc(path)}" ${value?'checked':''}><span>${esc(label)}</span></label>`;}
 function nav(){const tabs=[['sets','Setler'],['recipes','Yarı mamuller'],['materials','Malzemeler'],['profiles','Ambalaj profilleri'],['settings','Ayarlar']];$('#nav').innerHTML=tabs.map(([k,v])=>`<button data-tab="${k}" class="${tab===k?'active':''}">${v}</button>`).join('');}
 function renderCurrencyToggle(){
@@ -875,15 +907,24 @@ function setRowLaborSummary(row,result,orderQty){
 function setRowMaterials(row,index){
   const rows=(row.materials||[]).map((line,j)=>{
     const material=state.materials.find(x=>x.id===line.materialId);
-    const price=materialPriceTL(material,state.settings),quantity=number(line.quantity);
+    const price=materialPriceTL(material,state.settings),quantity=materialLineQuantity(line,material);
     const unit=material?.unit||'birim seçilmedi';
     const lineCost=price!==null&&quantity!==null&&quantity>=0?price*quantity:null;
-    return `<div class="subcard set-material-line"><div class="grid cols-4">
-      ${select('Malzeme adı',`rows.${index}.materials.${j}.materialId`,line.materialId,[['','Malzeme seçin'],...state.materials.map(x=>[x.id,[x.name,x.fabric,x.code].filter(Boolean).join(' · ')])])}
-      ${input('Boyut / ebat',`rows.${index}.materials.${j}.size`,line.size||'')}
-      <div class="fabric-picker">${fabricSelect(`rows.${index}.materials.${j}.fabric`,line.fabric||'')}<button type="button" class="secondary" data-action="add-fabric-type" data-row-index="${index}" data-index="${j}">+ Kumaş türü</button></div>
-      ${input(`Bir adet için miktar (${unit})`,`rows.${index}.materials.${j}.quantity`,line.quantity??'','number')}
-    </div><div class="section-head"><small>${quantity!==null&&quantity>=0?`${fmt(quantity,3)} ${esc(unit)} / adet · ${money4(lineCost)} / adet`:'Bir adet için malzeme miktarını girin.'}</small><button type="button" class="danger ghost" data-action="remove-row-material" data-row-index="${index}" data-index="${j}">Kaldır</button></div></div>`;
+    const area=materialLineArea(line),length=materialLineLengthMeters(line);
+    const squareMeter=unit==='metrekare',meter=unit==='metre';
+    const dimensionPath=`rows.${index}.materials.${j}`;
+    const consumption=squareMeter?`${input('Birinci kenar (cm)',`${dimensionPath}.widthCm`,line.widthCm??'','number','örn. 150')}${input('İkinci kenar (cm)',`${dimensionPath}.lengthCm`,line.lengthCm??'','number','örn. 240')}<div class="field"><span>Bir adet için tüketim (m²)</span><output class="calculated-area">${quantity===null?'—':fmt(quantity,4)}</output></div>`:
+      meter?`${input('Uzunluk (cm)',`${dimensionPath}.meterLengthCm`,line.meterLengthCm??'','number','örn. 190')}<div class="field"><span>Bir adet için tüketim (metre)</span><output class="calculated-area">${quantity===null?'—':fmt(quantity,4)}</output></div>`:
+      unit==='kg'?input('Bir adet için ağırlık (kg)',`${dimensionPath}.quantity`,line.quantity??'','number'):
+      unit==='adet'?input('Bir adet için miktar (adet)',`${dimensionPath}.quantity`,line.quantity??'','number'):
+      '<p class="material-area-note">Önce malzeme seçin; gerekli ölçü alanları birimine göre açılır.</p>';
+    const note=squareMeter?area===null?'Alan = birinci kenar × ikinci kenar ÷ 10.000. İki kenarı cm cinsinden girin.':`${fmt(number(line.widthCm),2)} × ${fmt(number(line.lengthCm),2)} cm ÷ 10.000 = ${fmt(area,4)} m²`:
+      meter?length===null?'Uzunluğu cm cinsinden girin; metre = uzunluk ÷ 100.':`${fmt(number(line.meterLengthCm),2)} cm ÷ 100 = ${fmt(length,4)} metre`:'';
+    const oldQuantity=(squareMeter&&line.widthCm===undefined&&line.lengthCm===undefined||meter&&line.meterLengthCm===undefined)&&quantity!==null;
+    return `<div class="subcard set-material-line"><div class="grid ${squareMeter?'cols-4':meter?'cols-3':'cols-2'}">
+      ${select('Malzeme adı',`rows.${index}.materials.${j}.materialId`,line.materialId,[['','Malzeme seçin'],...state.materials.map(x=>[x.id,[x.name,x.code].filter(Boolean).join(' · ')])])}
+      ${consumption}
+    </div>${squareMeter||meter?`<p class="material-area-note">${note}${oldQuantity?' Eski tüketim miktarı korunuyor; ölçüyü girince yeni hesap kullanılacak.':''}</p>`:''}<div class="section-head"><small>${quantity!==null&&quantity>=0?`${fmt(quantity,3)} ${esc(unit)} / adet · ${money4(lineCost)} / adet`:squareMeter?'Alanı hesaplamak için iki kenarı cm cinsinden girin.':meter?'Metre hesabı için uzunluğu cm cinsinden girin.':'Bir adet için malzeme miktarını girin.'}</small><button type="button" class="danger ghost" data-action="remove-row-material" data-row-index="${index}" data-index="${j}">Kaldır</button></div></div>`;
   }).join('');
   return `<div class="set-materials"><div class="section-head"><div><h4>Bu içeriğin malzemeleri</h4><p>Her malzemenin bir adet içerik için tüketimini girin. Set maliyeti bu miktarı içerik adediyle çarpar.</p></div><button type="button" class="secondary" data-action="add-row-material" data-index="${index}">+ Malzeme ekle</button></div>${rows||'<p class="muted">Bu içerikte malzeme ataması yok; malzeme maliyeti 0 TL.</p>'}</div>`;
 }
@@ -920,7 +961,7 @@ function expenseCards(s,c){
   <div class="card"><h3>Sterilizasyon gideri</h3><p>Koli başına sterilizasyon maliyetini girin. Koli sayısı, kargo bölümündeki koli içi adet ve sipariş adedinden hesaplanır. Son koli eksik dolsa da tam koli sterilizasyon gideri alınır.</p>${input('Bir koli sterilizasyon maliyeti (TL)','sterilizationPerBox',s.sterilizationPerBox??'','number','ör. 50')}<div class="grid cols-3"><div class="expense-result"><small>Sterilize edilen koli</small><strong>${c.shippingBoxCount===null?'—':fmt(c.shippingBoxCount,0)}</strong></div><div class="expense-result"><small>Toplam sterilizasyon</small><strong>${money4(c.sterilizationTotal)}</strong></div><div class="expense-result"><small>Set başına sterilizasyon</small><strong>${money4(c.sterilizationPerSet)}</strong></div></div></div>
   <div class="card"><div class="section-head"><div><h3>Diğer giderler</h3><p>Elektrik, su ve benzeri giderleri ayrı satırlar halinde ekleyin. Her satır için toplam sipariş tutarı veya set başına tutar seçin.</p></div><button type="button" class="secondary" data-action="add-other-expense">+ Gider ekle</button></div>${items.map((x,i)=>`<div class="expense-row">${input('Gider adı',`otherExpenses.${i}.name`,x.name||'')}${input('Tutar (TL)',`otherExpenses.${i}.amount`,x.amount??'','number')}${select('Hesaplama kapsamı',`otherExpenses.${i}.scope`,x.scope||'total',[['total','Sipariş toplamı'],['unit','Set başına']])}<button type="button" class="danger ghost" data-action="remove-other-expense" data-index="${i}">Kaldır</button></div>`).join('')||'<p class="muted">Diğer gider eklenmedi.</p>'}<div class="expense-result"><small>Diğer giderler · set başına</small><strong>${money4(c.otherExpensePerSet)}</strong></div></div>`;
 }
-function setView(){const s=target('sets');if(!s)return empty('Yeni set oluşturarak başlayın.');const c=calculateSet(s,state);const orderQty=number(s.orderQuantity??"1");const orderValid=Number.isInteger(orderQty)&&orderQty>0;const complete=!c.missing&&orderValid;if(finalizing)return finalView(s,c);return `<section class="editor"><div class="editor-head"><div><p class="eyebrow">SET MALİYETİ</p><h1>${esc(s.name)}</h1><p>Set başına maliyet ve işçilik dökümü</p></div><div class="set-head-actions"><div class="set-head-buttons"><button data-action="finalize" class="primary">Seti tamamla →</button> <div class="export-currency"><button data-action="excel-export" class="secondary" ${tutorial?'disabled title="Eğitim verileri dışa aktarılmaz"':''}>Excel'e yazdır</button><div id="currency-toggle" class="currency-toggle currency-toggle-set" aria-label="Öne çıkan para birimi"></div></div> <button class="danger ghost" data-action="delete" data-kind="sets">Sil</button></div></div></div><div class="status ${c.missing?'warn':''}">${c.status}${c.missing?' · Eksik kalemleri tamamlayın; bu tutar doğrulanmış maliyet değildir.':''}</div>${missingPanel(c,s,orderValid)}${timeWarnings(c)}${setSummaryCards(c)}<div class="card"><h3>Sipariş adedi ve kâr</h3><p>Adet, set sayısıdır. Temel maliyet malzeme, toplam işçilik, kargo, sterilizasyon ve diğer giderlerden oluşur. Hedef net kâr için vergi öncesi satış hesaplanır; seçilen vergiler bu tutara eklenir.</p><div class="grid cols-2">${input('Sipariş adedi (set)','orderQuantity',s.orderQuantity??'1','number')}${input('Hedef net kâr (%)','profitRate',s.profitRate??state.settings.profit??'0','number')}</div>${!orderValid?'<p class="warning">Sipariş adedi sıfırdan büyük tam sayı olmalı.</p>':''}${c.profitRate===null||c.profitRate<0?'<p class="warning">Hedef kâr oranı sıfır veya üzeri olmalı.</p>':''}<div class="metrics order-metrics"><div><small>Set başına toplam maliyet</small><strong>${money4(c.missing?null:c.costWithTax)}</strong></div><div><small>Set başına net kâr</small><strong>${money4(c.missing?null:c.profitAmount)}</strong></div><div><small>Toplam maliyet</small><strong>${money(complete?c.costWithTax*orderQty:null)}</strong></div><div><small>Toplam net kâr</small><strong>${money(complete?c.profitAmount*orderQty:null)}</strong></div><div><small>Toplam satış (vergiler dahil)</small><strong>${money(complete&&c.total!==null?c.total*orderQty:null)}</strong></div></div></div>${expenseCards(s,c)}<div class="card"><h3>Bu sete uygulanacak vergiler</h3><p>Vergileri burada seçin. Vergi öncesi satış = temel maliyet × (1 + hedef kâr / 100). Her vergi = vergi öncesi satış × kendi oranı / 100. Son fiyat = vergi öncesi satış + vergiler. Net kâr = son fiyat − temel maliyet − vergiler.</p>${state.taxes.length?state.taxes.map(t=>'<label class="check"><input type="checkbox" data-tax-id="'+esc(t.id)+'" '+((s.taxIds||[]).includes(t.id)?'checked':'')+'><span>'+esc(t.name)+' · %'+esc(t.rate)+'</span></label>').join(''):'<p class="muted">Henüz vergi tanımlanmadı. Ayarlar bölümünden vergi ekleyin.</p>'}<div class="breakdown"><span>Temel maliyet · malzeme + işçilik + kargo + sterilizasyon + diğer giderler</span><b>${money4(c.missing?null:c.baseTotal)}</b><span>Vergi öncesi satış fiyatı</span><b>${money4(c.missing?null:c.beforeTax)}</b>${c.taxLines.map(x=>'<span>'+esc(x.name)+' · %'+fmt(x.rate,2)+'</span><b>'+money4(c.missing?null:x.amount)+'</b>').join('')}<span>Vergi toplamı · gider</span><b>${money4(c.missing?null:c.taxAmount)}</b><span>Vergiler dahil toplam maliyet</span><b>${money4(c.missing?null:c.costWithTax)}</b><span>Net kâr · satış − maliyet</span><b>${money4(c.missing?null:c.profitAmount)}</b><span>Vergiler dahil son fiyat</span><b>${money(c.missing?null:c.total)}</b></div></div><div class="card"><h3>Set bilgileri</h3><div class="grid cols-4">${input('Set adı','name',s.name)}${input('Kod','code',s.code)}${input('Lot','lot',s.lot)}${select('Ambalaj profili','profileId',s.profileId,[['','Profil yok'],...state.profiles.map(p=>[p.id,p.name])])}</div></div><div class="card"><div class="section-head"><div><div class="content-heading"><h3>Set içeriği</h3><label class="detail-switch"><input type="checkbox" data-action="toggle-detailed-view" ${detailedView?'checked':''}><span class="detail-switch-track"></span><span>Detaylı görünüm</span></label></div><p>Üretim ve sete dizme işçiliği ayrı hesaplanır.</p></div><button data-action="add-set-row" class="secondary">+ İçerik</button></div>${s.rows.map((row,i)=>setRowCard(s,row,i,c.rows[i],orderValid?orderQty:null)).join('')||'<p class="muted">Henüz içerik yok.</p>'}</div><div class="card"><div class="section-head"><div><h3>Ek set hazırlama işlemleri</h3><p>Profilde tanımlı rulo, koli veya torba işçiliği burada tekrar sayılmaz.</p></div><button data-action="add-extra" class="secondary">+ Ek işlem</button></div>${s.extras.map((x,i)=>`<div class="subcard"><div class="section-head">${select('İşlem',`extras.${i}.name`,x.name,[['Hazırlık, taşıma ve yükleme','Hazırlık, taşıma ve yükleme'],['Rulo geçirme','Rulo geçirme'],['Rulo kapama','Rulo kapama'],['Koli işçiliği','Koli işçiliği'],['Torba işçiliği','Torba işçiliği'],...state.operationNames.map(n=>[n,n])])}<button data-action="remove-extra" data-index="${i}" class="danger ghost">Kaldır</button></div>${setExtraLaborSummary(c.extras[i],orderValid?orderQty:null)}<details class="set-row-details" data-set-row="${esc(s.id)}:extra:${i}" ${expandedSetRows.has(s.id+':extra:'+i)?'open':''}><summary>İşlem ölçümünü düzenle <span aria-hidden="true">⌄</span></summary><div class="set-row-fields">${timeForm(`extras.${i}`,x,{showSurcharge:true})}${c.extras[i]?.duplicate?'<p class="warning">Ambalaj profilinde bulunduğu için hesaba eklenmedi.</p>':''}</div></details></div>`).join('')||'<p class="muted">Ek işlem yok.</p>'}</div><div class="card"><h3>İşçilik dökümü · kişi-dakika / set</h3><div class="breakdown"><span>Yarı mamul üretimi</span><b>${fmt(c.production)}</b><span>Sete dizme</span><b>${fmt(c.placement)}</b><span>Set hazırlama ve ambalaj</span><b>${fmt(c.preparation)}</b><span>Toplam temel işçilik</span><b>${fmt(c.baseMinutes)}</b><span>Ek payı önceden içeren süre</span><b>${fmt(c.excluded)}</b><span>Ek pay uygulanacak süre</span><b>${fmt(Math.max(0,c.baseMinutes-c.excluded))}</b><span>Üretim ve set işçiliği · ek pay dahil</span><b>${money4(c.adjustedLabor)}</b><span>İdari işçilik · aynı tutar</span><b>${money4(c.administrativeLabor)}</b><span>Toplam işçilik</span><b>${money4(c.totalLabor)}</b></div>${c.packaging.parts.map(x=>`<p class="muted">${esc(x.label)}: ${fmt(x.value)} kişi-dk${x.missing?' · veri eksik':''}</p>`).join('')}</div></section>`;}
+function setView(){const s=target('sets');if(!s)return empty('Yeni set oluşturarak başlayın.');const c=calculateSet(s,state);const orderQty=number(s.orderQuantity??"1");const orderValid=Number.isInteger(orderQty)&&orderQty>0;const complete=!c.missing&&orderValid;if(finalizing)return finalView(s,c);return `<section class="editor"><div class="editor-head"><div><p class="eyebrow">SET MALİYETİ</p><div class="set-title-row"><h1>${esc(s.name)}</h1><button type="button" class="set-name-edit secondary" data-action="edit-set-name" aria-label="Set adını düzenle" title="Set adını düzenle">✎</button></div><p>Set başına maliyet ve işçilik dökümü</p><div class="set-header-fields">${input('Sipariş adedi (set)','orderQuantity',s.orderQuantity??'1','number')}${input('Lot','lot',s.lot)}${input('Kod','code',s.code)}${select('Ambalaj profili','profileId',s.profileId,[['','Profil yok'],...state.profiles.map(p=>[p.id,p.name])])}</div></div><div class="set-head-actions"><div class="set-head-buttons"><button data-action="finalize" class="primary">Seti tamamla →</button> <div class="export-currency"><button data-action="excel-export" class="secondary" ${tutorial?'disabled title="Eğitim verileri dışa aktarılmaz"':''}>Excel'e yazdır</button><div id="currency-toggle" class="currency-toggle currency-toggle-set" aria-label="Öne çıkan para birimi"></div></div> <button class="danger ghost" data-action="delete" data-kind="sets">Sil</button></div></div></div><div class="status ${c.missing?'warn':''}">${c.status}${c.missing?' · Eksik kalemleri tamamlayın; bu tutar doğrulanmış maliyet değildir.':''}</div>${missingPanel(c,s,orderValid)}${timeWarnings(c)}${setSummaryCards(c)}<div class="card"><h3>Sipariş adedi ve kâr</h3><p>Adet, set sayısıdır. Temel maliyet malzeme, toplam işçilik, kargo, sterilizasyon ve diğer giderlerden oluşur. Hedef net kâr için vergi öncesi satış hesaplanır; seçilen vergiler bu tutara eklenir.</p><div class="set-profit-field">${input('Hedef net kâr (%)','profitRate',s.profitRate??state.settings.profit??'0','number')}</div>${!orderValid?'<p class="warning">Sipariş adedi sıfırdan büyük tam sayı olmalı.</p>':''}${c.profitRate===null||c.profitRate<0?'<p class="warning">Hedef kâr oranı sıfır veya üzeri olmalı.</p>':''}<div class="metrics order-metrics"><div><small>Set başına toplam maliyet</small><strong>${money4(c.missing?null:c.costWithTax)}</strong></div><div><small>Set başına net kâr</small><strong>${money4(c.missing?null:c.profitAmount)}</strong></div><div><small>Toplam maliyet</small><strong>${money(complete?c.costWithTax*orderQty:null)}</strong></div><div><small>Toplam net kâr</small><strong>${money(complete?c.profitAmount*orderQty:null)}</strong></div><div><small>Toplam satış (vergiler dahil)</small><strong>${money(complete&&c.total!==null?c.total*orderQty:null)}</strong></div></div></div>${expenseCards(s,c)}<div class="card"><h3>Bu sete uygulanacak vergiler</h3><p>Vergileri burada seçin. Vergi öncesi satış = temel maliyet × (1 + hedef kâr / 100). Her vergi = vergi öncesi satış × kendi oranı / 100. Son fiyat = vergi öncesi satış + vergiler. Net kâr = son fiyat − temel maliyet − vergiler.</p>${state.taxes.length?state.taxes.map(t=>'<label class="check"><input type="checkbox" data-tax-id="'+esc(t.id)+'" '+((s.taxIds||[]).includes(t.id)?'checked':'')+'><span>'+esc(t.name)+' · %'+esc(t.rate)+'</span></label>').join(''):'<p class="muted">Henüz vergi tanımlanmadı. Ayarlar bölümünden vergi ekleyin.</p>'}<div class="breakdown"><span>Temel maliyet · malzeme + işçilik + kargo + sterilizasyon + diğer giderler</span><b>${money4(c.missing?null:c.baseTotal)}</b><span>Vergi öncesi satış fiyatı</span><b>${money4(c.missing?null:c.beforeTax)}</b>${c.taxLines.map(x=>'<span>'+esc(x.name)+' · %'+fmt(x.rate,2)+'</span><b>'+money4(c.missing?null:x.amount)+'</b>').join('')}<span>Vergi toplamı · gider</span><b>${money4(c.missing?null:c.taxAmount)}</b><span>Vergiler dahil toplam maliyet</span><b>${money4(c.missing?null:c.costWithTax)}</b><span>Net kâr · satış − maliyet</span><b>${money4(c.missing?null:c.profitAmount)}</b><span>Vergiler dahil son fiyat</span><b>${money(c.missing?null:c.total)}</b></div></div><div class="card"><div class="section-head"><div><div class="content-heading"><h3>Set içeriği</h3><label class="detail-switch"><input type="checkbox" data-action="toggle-detailed-view" ${detailedView?'checked':''}><span class="detail-switch-track"></span><span>Detaylı görünüm</span></label></div><p>Üretim ve sete dizme işçiliği ayrı hesaplanır.</p></div><button data-action="add-set-row" class="secondary">+ İçerik</button></div>${s.rows.map((row,i)=>setRowCard(s,row,i,c.rows[i],orderValid?orderQty:null)).join('')||'<p class="muted">Henüz içerik yok.</p>'}</div><div class="card"><div class="section-head"><div><h3>Ek set hazırlama işlemleri</h3><p>Profilde tanımlı rulo, koli veya torba işçiliği burada tekrar sayılmaz.</p></div><button data-action="add-extra" class="secondary">+ Ek işlem</button></div>${s.extras.map((x,i)=>`<div class="subcard"><div class="section-head">${select('İşlem',`extras.${i}.name`,x.name,[['Hazırlık, taşıma ve yükleme','Hazırlık, taşıma ve yükleme'],['Rulo geçirme','Rulo geçirme'],['Rulo kapama','Rulo kapama'],['Koli işçiliği','Koli işçiliği'],['Torba işçiliği','Torba işçiliği'],...state.operationNames.map(n=>[n,n])])}<button data-action="remove-extra" data-index="${i}" class="danger ghost">Kaldır</button></div>${setExtraLaborSummary(c.extras[i],orderValid?orderQty:null)}<details class="set-row-details" data-set-row="${esc(s.id)}:extra:${i}" ${expandedSetRows.has(s.id+':extra:'+i)?'open':''}><summary>İşlem ölçümünü düzenle <span aria-hidden="true">⌄</span></summary><div class="set-row-fields">${timeForm(`extras.${i}`,x,{showSurcharge:true})}${c.extras[i]?.duplicate?'<p class="warning">Ambalaj profilinde bulunduğu için hesaba eklenmedi.</p>':''}</div></details></div>`).join('')||'<p class="muted">Ek işlem yok.</p>'}</div><div class="card"><h3>İşçilik dökümü · kişi-dakika / set</h3><div class="breakdown"><span>Yarı mamul üretimi</span><b>${fmt(c.production)}</b><span>Sete dizme</span><b>${fmt(c.placement)}</b><span>Set hazırlama ve ambalaj</span><b>${fmt(c.preparation)}</b><span>Toplam temel işçilik</span><b>${fmt(c.baseMinutes)}</b><span>Ek payı önceden içeren süre</span><b>${fmt(c.excluded)}</b><span>Ek pay uygulanacak süre</span><b>${fmt(Math.max(0,c.baseMinutes-c.excluded))}</b><span>Üretim ve set işçiliği · ek pay dahil</span><b>${money4(c.adjustedLabor)}</b><span>İdari işçilik · aynı tutar</span><b>${money4(c.administrativeLabor)}</b><span>Toplam işçilik</span><b>${money4(c.totalLabor)}</b></div>${c.packaging.parts.map(x=>`<p class="muted">${esc(x.label)}: ${fmt(x.value)} kişi-dk${x.missing?' · veri eksik':''}</p>`).join('')}</div></section>`;}
 function recipeCostDetails(s,c){
   const minuteRate=laborRates(state.settings)?.minute??null;
   const surchargeRate=number(state.settings.surcharge)??0;
@@ -949,16 +990,19 @@ function recipeCostDetails(s,c){
     const productionUnitCost=productionUnitMinutes===null?null:productionUnitMinutes===0?0:minuteRate===null?null:productionUnitMinutes*minuteRate;
     const materialRows=(row.materials||[]).map(line=>{
       const material=state.materials.find(x=>x.id===line.materialId);
-      const amount=number(line.quantity),price=materialPriceTL(material,state.settings);
+      const amount=materialLineQuantity(line,material),price=materialPriceTL(material,state.settings);
       const valid=material&&amount!==null&&amount>=0&&price!==null&&validQty;
       const original=material?`${esc(material.price)} ${esc(material.currency||'TRY')} / ${esc(material.unit)}`:'Malzeme seçilmedi';
-      return `<tr><th scope="row">${esc(material?.name||'Eksik malzeme')}<small>${esc([line.size,line.fabric].filter(Boolean).join(' · '))}</small></th><td>${valid?`${fmt(amount,3)} ${esc(material.unit)} × ${fmt(qty,3)} adet × ${money4(price)} / ${esc(material.unit)} (${original})`:'Veri eksik veya geçersiz'}</td><td>${money4(valid?amount*qty*price:null)}</td></tr>`;
+      const area=materialLineArea(line),length=materialLineLengthMeters(line);
+      const size=material?.unit==='metrekare'&&area!==null?`${line.widthCm} × ${line.lengthCm} cm = ${fmt(area,4)} m²`:
+        material?.unit==='metre'&&length!==null?`${line.meterLengthCm} cm = ${fmt(length,4)} metre`:line.size||'';
+      return `<tr><th scope="row">${esc(material?.name||'Eksik malzeme')}<small>${esc(size)}</small></th><td>${valid?`${fmt(amount,3)} ${esc(material.unit)} × ${fmt(qty,3)} adet × ${money4(price)} / ${esc(material.unit)} (${original})`:'Veri eksik veya geçersiz'}</td><td>${money4(valid?amount*qty*price:null)}</td></tr>`;
     }).join('');
     const placing=result.placing,placingCost=placing&&!placing.missing?(placing.value===0?0:minuteRate===null?null:placing.value*minuteRate):null;
     const surcharge=productionCost===null||placingCost===null?null:(productionCost+placingCost)*surchargeRate/100;
     const rowMaterial=validQty&&(row.materials||[]).every(line=>{
       const material=state.materials.find(x=>x.id===line.materialId);
-      const amount=number(line.quantity);
+      const amount=materialLineQuantity(line,material);
       return material&&amount!==null&&amount>=0&&materialPriceTL(material,state.settings)!==null;
     })?result.material:null;
     const rowTotal=rowMaterial===null||productionCost===null||surcharge===null||placingCost===null?null:rowMaterial+productionCost+surcharge+placingCost;
@@ -1107,12 +1151,12 @@ function render(){
   if(detailViewChanged){document.querySelectorAll('.set-row-summary').forEach(el=>el.classList.add('detail-swap'));detailViewChanged=false;}
   renderCurrencyToggle();renderTutorial();
 }
-function appDialog({title,message='',inputLabel='',confirmLabel='Tamam',danger=false,onConfirm=()=>{}}){
+function appDialog({title,message='',inputLabel='',inputValue='',confirmLabel='Tamam',danger=false,onConfirm=()=>{}}){
   document.querySelector('#app-dialog')?.remove();
   const previousFocus=document.activeElement;
   const overlay=document.createElement('div');
   overlay.id='app-dialog';overlay.className='app-dialog-backdrop';
-  overlay.innerHTML=`<form class="app-dialog" role="dialog" aria-modal="true" aria-label="${esc(title)}"><h3>${esc(title)}</h3>${message?`<p>${esc(message)}</p>`:''}${inputLabel?`<label class="field"><span>${esc(inputLabel)}</span><input name="dialogValue" required autocomplete="off"></label>`:''}<div class="app-dialog-actions"><button type="button" class="secondary" data-dialog-cancel>Vazgeç</button><button type="submit" class="${danger?'danger':'primary'}">${esc(confirmLabel)}</button></div></form>`;
+  overlay.innerHTML=`<form class="app-dialog" role="dialog" aria-modal="true" aria-label="${esc(title)}"><h3>${esc(title)}</h3>${message?`<p>${esc(message)}</p>`:''}${inputLabel?`<label class="field"><span>${esc(inputLabel)}</span><input name="dialogValue" value="${esc(inputValue)}" required autocomplete="off"></label>`:''}<div class="app-dialog-actions"><button type="button" class="secondary" data-dialog-cancel>Vazgeç</button><button type="submit" class="${danger?'danger':'primary'}">${esc(confirmLabel)}</button></div></form>`;
   const close=restore=>{overlay.remove();if(restore&&previousFocus?.isConnected)previousFocus.focus();};
   overlay.querySelector('[data-dialog-cancel]').addEventListener('click',()=>close(true));
   overlay.addEventListener('click',e=>{if(e.target===overlay)close(true);});
@@ -1213,9 +1257,12 @@ if(tab==='materials'&&path==='currency'){
      row.materials=(recipe?.materials||[]).map(line=>({...line,size:recipe.size||'',fabric:recipe.fabric||''}));
      delete row.priceSnapshot;
    }
-   if(tab==='sets'&&/^rows\.\d+\.materials\.\d+\.materialId$/.test(path)){
-     const line=getPath(obj,path.replace(/\.materialId$/,'')),material=state.materials.find(x=>x.id===line.materialId);
-     if(material?.fabric&&!line.fabric)line.fabric=material.fabric;
+   if(tab==='sets'&&/^rows\.\d+\.materials\.\d+\.(materialId|widthCm|lengthCm|meterLengthCm)$/.test(path)){
+     const line=getPath(obj,path.replace(/\.(materialId|widthCm|lengthCm|meterLengthCm)$/,''));
+     const material=state.materials.find(x=>x.id===line.materialId);
+     if(material?.unit==='metrekare')line.quantity=materialLineArea(line)?.toString()??'';
+     else if(material?.unit==='metre')line.quantity=materialLineLengthMeters(line)?.toString()??'';
+     else if(path.endsWith('.materialId'))line.quantity='';
    }
  }
 save();scheduleChangeRender();});
@@ -1230,13 +1277,12 @@ document.addEventListener('input',e=>{
   select.value=current;
 });
 document.addEventListener('click',e=>{const button=e.target.closest('[data-action="display-currency"]');if(!button)return;e.stopImmediatePropagation();state.settings.displayCurrency=button.dataset.currency;save();render();},true);
-document.addEventListener('click',e=>{const button=e.target.closest('[data-action="add-fabric-type"]');if(!button)return;e.stopImmediatePropagation();const rowIndex=Number(button.dataset.rowIndex),lineIndex=Number(button.dataset.index);appDialog({title:'Kumaş türü ekle',inputLabel:'Kumaş türü adı',confirmLabel:'Ekle',onConfirm:name=>{if(!name)return;const line=target('sets')?.rows?.[rowIndex]?.materials?.[lineIndex];if(!line)return;line.fabric=name;if(!state.fabricTypes.includes(name))state.fabricTypes.push(name);save();render();}});},true);
-document.addEventListener('click',e=>{const b=e.target.closest('[data-action],[data-tab]');if(!b)return;const action=b.dataset.action;if(action==='toggle-detailed-view')return;if(action==='toggle-sidebar'){sidebarCollapsed=!sidebarCollapsed;$('#app').classList.toggle('sidebar-collapsed',sidebarCollapsed);const content=b.closest('.sidebar')?.querySelector('.sidebar-content');if(content)content.inert=sidebarCollapsed;b.setAttribute('aria-expanded',String(!sidebarCollapsed));b.setAttribute('aria-label',sidebarCollapsed?'Sol listeyi aç':'Sol listeyi daralt');b.title=sidebarCollapsed?'Listeyi aç':'Listeyi daralt';b.textContent=sidebarCollapsed?'☰':'‹';return;}if(action==='tutorial-start'){startTutorial();return;}if(action==='tutorial-exit'){endTutorial();return;}if(action==='tutorial-next'){tutorial.index===tutorialSteps.length-1?endTutorial():goTutorial(tutorial.index+1);return;}if(action==='tutorial-prev'){goTutorial(tutorial.index-1);return;}if(b.dataset.tab){tab=b.dataset.tab;finalizing=false;render();return;}if(action==='finalize'){finalizing=true;render();return;}if(action==='finalize-back'){finalizing=false;render();return;}if(action==='refresh-rates'){refreshRates();return;}if(action==='fix-missing'){tab=b.dataset.fixTab;selected[tab]=b.dataset.fixId||selected[tab];finalizing=false;render();const path=b.dataset.fixPath;const field=path?[...document.querySelectorAll('[data-path]')].find(el=>el.dataset.path===path):null;field?.closest('details[data-set-row]')?.setAttribute('open','');(field||document.querySelector('.editor'))?.scrollIntoView({block:'center',behavior:'smooth'});field?.focus();return;}if(action==='convert-recipe'){const recipe=target('recipes');recipe.method='production';save();render();return;}if(action==='convert-time'){const item=getPath(target(tab),b.dataset.path);if(item){item.timeType='elapsed';item.status='missing';item.duration='';item.people='';if(tab==='recipes')item.output='';save();render();}return;}if(action==='accept-price'){const row=target('sets')?.rows?.[Number(b.dataset.index)];const snapshot=setRowUnitCosts(row,state);if(row&&snapshot){row.priceSnapshot=snapshot;save();render();}return;}if(action==='excel-export'){if(tutorial||!target('sets'))return;exportSetXlsx(target('sets')).catch(err=>showAppNotice(`Excel raporu oluşturulamadı: ${err.message}`));return;}const kind=b.dataset.kind;let obj=target(tab),i=Number(b.dataset.index);if(action==='select'){selected[kind]=b.dataset.id;finalizing=false;render();return;}if(action==='add'){const v=kind==='sets'?blankSet():kind==='recipes'?blankRecipe():kind==='profiles'?blankProfile():{id:id(),name:'Yeni malzeme',code:'',unit:'adet',price:'',currency:'TRY'};state[kind].push(v);selected[kind]=v.id;finalizing=false;}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-action],[data-tab]');if(!b)return;const action=b.dataset.action;if(action==='toggle-detailed-view')return;if(action==='toggle-sidebar'){sidebarCollapsed=!sidebarCollapsed;$('#app').classList.toggle('sidebar-collapsed',sidebarCollapsed);const content=b.closest('.sidebar')?.querySelector('.sidebar-content');if(content)content.inert=sidebarCollapsed;b.setAttribute('aria-expanded',String(!sidebarCollapsed));b.setAttribute('aria-label',sidebarCollapsed?'Sol listeyi aç':'Sol listeyi daralt');b.title=sidebarCollapsed?'Listeyi aç':'Listeyi daralt';b.textContent=sidebarCollapsed?'☰':'‹';return;}if(action==='tutorial-start'){startTutorial();return;}if(action==='tutorial-exit'){endTutorial();return;}if(action==='tutorial-next'){tutorial.index===tutorialSteps.length-1?endTutorial():goTutorial(tutorial.index+1);return;}if(action==='tutorial-prev'){goTutorial(tutorial.index-1);return;}if(b.dataset.tab){tab=b.dataset.tab;finalizing=false;render();return;}if(action==='edit-set-name'){const set=target('sets');if(set)appDialog({title:'Set adını düzenle',inputLabel:'Set adı',inputValue:set.name,confirmLabel:'Kaydet',onConfirm:name=>{if(!name)return;set.name=name;save();render();}});return;}if(action==='finalize'){finalizing=true;render();return;}if(action==='finalize-back'){finalizing=false;render();return;}if(action==='refresh-rates'){refreshRates();return;}if(action==='fix-missing'){tab=b.dataset.fixTab;selected[tab]=b.dataset.fixId||selected[tab];finalizing=false;render();const path=b.dataset.fixPath;const field=path?[...document.querySelectorAll('[data-path]')].find(el=>el.dataset.path===path):null;field?.closest('details[data-set-row]')?.setAttribute('open','');(field||document.querySelector('.editor'))?.scrollIntoView({block:'center',behavior:'smooth'});field?.focus();return;}if(action==='convert-recipe'){const recipe=target('recipes');recipe.method='production';save();render();return;}if(action==='convert-time'){const item=getPath(target(tab),b.dataset.path);if(item){item.timeType='elapsed';item.status='missing';item.duration='';item.people='';if(tab==='recipes')item.output='';save();render();}return;}if(action==='accept-price'){const row=target('sets')?.rows?.[Number(b.dataset.index)];const snapshot=setRowUnitCosts(row,state);if(row&&snapshot){row.priceSnapshot=snapshot;save();render();}return;}if(action==='excel-export'){if(tutorial||!target('sets'))return;exportSetXlsx(target('sets')).catch(err=>showAppNotice(`Excel raporu oluşturulamadı: ${err.message}`));return;}const kind=b.dataset.kind;let obj=target(tab),i=Number(b.dataset.index);if(action==='select'){selected[kind]=b.dataset.id;finalizing=false;render();return;}if(action==='add'){const v=kind==='sets'?blankSet():kind==='recipes'?blankRecipe():kind==='profiles'?blankProfile():{id:id(),name:'Yeni malzeme',code:'',unit:'adet',price:'',currency:'TRY'};state[kind].push(v);selected[kind]=v.id;finalizing=false;}
 if(action==='delete'&&obj){appDialog({title:'Kaydı sil',message:`${obj.name} kaydını silmek istiyor musunuz?`,confirmLabel:'Sil',danger:true,onConfirm:()=>{state[kind]=state[kind].filter(x=>x.id!==obj.id);selected[kind]=state[kind][0]?.id;save();render();}});return;}
 if(action==='add-tax'){state.taxes.push({id:id(),name:'Yeni vergi',rate:'0'});save();render();return;}if(action==='remove-tax'){const removed=state.taxes.splice(i,1)[0];for(const set of state.sets)set.taxIds=(set.taxIds||[]).filter(id=>id!==removed?.id);save();render();return;}
 if(action==='add-operation')obj.operations.push({name:state.operationNames[0],...emptyTime('batch')});
 if(action==='remove-operation')obj.operations.splice(i,1);
-if(action==='add-row-material')obj.rows[i].materials.push({materialId:'',size:'',fabric:'',quantity:''});
+ if(action==='add-row-material')obj.rows[i].materials.push({materialId:'',widthCm:'',lengthCm:'',meterLengthCm:'',quantity:''});
 if(action==='remove-row-material')obj.rows[Number(b.dataset.rowIndex)].materials.splice(i,1);
 if(action==='add-set-row'){
   obj.rows.push({recipeId:'',quantity:'1',materials:[],placement:{...emptyTime(),status:'notApplicable',coverage:'item',sets:''}});

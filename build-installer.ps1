@@ -112,7 +112,7 @@ Copy-Item -LiteralPath (Join-Path $projectRoot 'desktop\main.cjs') -Destination 
 Copy-Item -LiteralPath (Join-Path $projectRoot 'desktop\preload.cjs') -Destination (Join-Path $stageFull 'preload.cjs')
 New-Item -Path (Join-Path $stageFull 'vendor') -ItemType Directory -Force | Out-Null
 Copy-Item -LiteralPath (Join-Path $projectRoot 'vendor\exceljs.min.js') -Destination (Join-Path $stageFull 'vendor\exceljs.min.js')
-$desktopPackage = @{ name = 'btx-price'; productName = 'Biotex Price'; version = '1.2.0'; main = 'main.cjs' } | ConvertTo-Json
+$desktopPackage = @{ name = 'btx-price'; productName = 'Biotex Price'; version = '1.1.4'; main = 'main.cjs' } | ConvertTo-Json
 [IO.File]::WriteAllText((Join-Path $stageFull 'package.json'), $desktopPackage, $utf8)
 
 $nodeDirectory = Join-Path $env:LOCALAPPDATA 'Microsoft\WinGet\Packages'
@@ -128,7 +128,7 @@ if (-not (Test-Path -LiteralPath $packager)) { throw 'Electron paketleyici bulun
 $desktopOutput = Join-Path $projectRoot 'build\desktop'
 $desktopFull = [IO.Path]::GetFullPath($desktopOutput)
 if (-not $desktopFull.StartsWith($projectFull, [StringComparison]::OrdinalIgnoreCase)) { throw 'Masaustu cikti dizini proje disinda.' }
-& $packager $stageFull 'Biotex Price' --platform=win32 --arch=x64 --out=$desktopFull --overwrite --asar --icon=(Join-Path $projectRoot 'app.ico') --executable-name='Biotex Price' --app-version=1.2.0
+& $packager $stageFull 'Biotex Price' --platform=win32 --arch=x64 --out=$desktopFull --overwrite --asar --icon=(Join-Path $projectRoot 'app.ico') --executable-name='Biotex Price' --app-version=1.1.4
 if ($LASTEXITCODE -ne 0) { throw "Electron paketleme basarisiz: $LASTEXITCODE" }
 $desktopExecutable = Join-Path $desktopFull 'Biotex Price-win32-x64\Biotex Price.exe'
 if (-not (Test-Path -LiteralPath $desktopExecutable)) { throw 'Masaustu uygulamasi olusturulamadi.' }
@@ -166,7 +166,7 @@ if ($signedRelease) {
     & $compiler $installerScript
 }
 if ($LASTEXITCODE -ne 0) { throw "Inno Setup derlemesi başarısız oldu: $LASTEXITCODE" }
-$setup = Join-Path $projectRoot 'dist\BTXPrice-Setup-1.2.0.exe'
+$setup = Join-Path $projectRoot 'dist\BTXPrice-Setup-1.1.4.exe'
 if ($signedRelease) {
     & $SignToolPath verify /pa $setup
     if ($LASTEXITCODE -ne 0) { throw "Kurulum dosyasinin kod imzasi dogrulanamadi: $setup" }

@@ -12,5 +12,16 @@ assert.equal(summary.getCell('D23').value,16.42,'İdari işçilik özet satırı
 assert.equal(summary.getCell('D24').value,32.84,'Toplam işçilik özet satırında görünmeli');
 assert.equal(expenses.getCell('A6').value,'Sterilizasyon','Sterilizasyon ayrı gider satırı olmalı');
 assert.equal(expenses.getCell('G6').value,100,'Eksik dolu son koli tam sayılmalı');
+const areaSet={...set,rows:[{...set.rows[0],materials:[{materialId:'tutorial-material-1',widthCm:'150',lengthCm:'240',quantity:'999'}]}]};
+const areaSheet=buildSetWorkbook(areaSet,state,ExcelJS).getWorksheet('Malzemeler');
+assert.equal(areaSheet.getCell('D5').value,3.6,'Metrekare alanı Excel dökümünde görünmeli');
+assert.equal(areaSheet.getCell('F5').value,3.6,'Excel tüketimi elle yazılmış miktar yerine alandan hesaplamalı');
+assert.equal(areaSheet.getCell('O5').value,45,'Excel malzeme tutarı hesaplanan alana dayanmalı');
+const meterState={...state,materials:[{...state.materials[0],unit:'metre',price:'10'}]};
+const meterSet={...set,rows:[{...set.rows[0],materials:[{materialId:'tutorial-material-1',meterLengthCm:'190',quantity:'999'}]}]};
+const meterSheet=buildSetWorkbook(meterSet,meterState,ExcelJS).getWorksheet('Malzemeler');
+assert.equal(meterSheet.getCell('D5').value,1.9,'Metre uzunluğu Excel dökümüne çevrilmiş miktar olarak yazılmalı');
+assert.equal(meterSheet.getCell('F5').value,1.9,'Excel metre tüketimi cm uzunluğundan hesaplamalı');
+assert.equal(meterSheet.getCell('O5').value,19,'Excel metre maliyeti hesaplanan uzunluğa dayanmalı');
 assert.ok((await workbook.xlsx.writeBuffer()).byteLength>0,'Excel dosyası oluşturulmalı');
 console.log('Excel raporu doğrulandı.');

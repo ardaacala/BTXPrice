@@ -21,9 +21,20 @@ export function migrateLegacySetData(data) {
     }
     delete set.shippingTotal;
     for(const row of set.rows||[]){
-      if(Array.isArray(row.materials))continue;
-      const recipe=data.recipes?.find(x=>x.id===row.recipeId);
-      row.materials=(recipe?.materials||[]).map(line=>({...line,size:recipe.size||'',fabric:recipe.fabric||''}));
+      if(!Array.isArray(row.materials)){
+        const recipe=data.recipes?.find(x=>x.id===row.recipeId);
+        row.materials=(recipe?.materials||[]).map(line=>({...line,size:recipe.size||'',fabric:recipe.fabric||''}));
+      }
+      for(const line of row.materials){
+        if(Object.hasOwn(line,'widthCm') || Object.hasOwn(line,'lengthCm'))continue;
+        if(data.materials?.find(x=>x.id===line.materialId)?.unit!=='metrekare')continue;
+        const match=String(line.size||'').trim().match(/^(\d+(?:[.,]\d+)?)\s*[x×]\s*(\d+(?:[.,]\d+)?)\s*(?:cm)?$/i);
+        if(!match)continue;
+        const width=number(match[1]),length=number(match[2]),quantity=number(line.quantity);
+        if(width>0 && length>0 && quantity!==null && Math.abs(round(width*length/10000,6)-quantity)<0.000001){
+          line.widthCm=String(width);line.lengthCm=String(length);
+        }
+      }
     }
   }
   return data;
@@ -51,6 +62,24 @@ export function materialPriceTL(material, settings) {
   if (settings?.ratesVerified !== true) return null;
   const rate=number(currency==='EUR'?settings?.eurTry:currency==='USD'?settings?.usdTry:null);
   return rate!==null && rate>0 ? price*rate : null;
+}
+
+export function materialLineArea(line) {
+  const width=number(line?.widthCm), length=number(line?.lengthCm);
+  return width>0 && length>0 ? round(width*length/10000,6) : null;
+}
+
+export function materialLineLengthMeters(line) {
+  const length=number(line?.meterLengthCm);
+  return length>0 ? round(length/100,6) : null;
+}
+
+export function materialLineQuantity(line, material) {
+  if(material?.unit==='metrekare' && (Object.hasOwn(line,'widthCm') || Object.hasOwn(line,'lengthCm')))
+    return materialLineArea(line);
+  if(material?.unit==='metre' && Object.hasOwn(line,'meterLengthCm'))
+    return materialLineLengthMeters(line);
+  return number(line?.quantity);
 }
 
 export function durationMinutes(entry) {
@@ -141,7 +170,7 @@ export function setRowUnitCosts(row, state) {
   let material=0;
   for (const line of row.materials||[]) {
     const item=state.materials.find(x=>x.id===line.materialId);
-    const quantity=number(line.quantity),price=materialPriceTL(item,state.settings);
+    const quantity=materialLineQuantity(line,item),price=materialPriceTL(item,state.settings);
     if (!item||quantity===null||quantity<0||price===null) return null;
     material+=quantity*price;
   }
@@ -208,9 +237,13 @@ export function calculateSet(set, state) {
     let rowMaterialMissing=false;
     const material=sum((row.materials||[]).map((line,j)=>{
       const m=state.materials.find(x=>x.id===line.materialId);
-      const amount=number(line.quantity), price=materialPriceTL(m,state.settings);
+      const amount=materialLineQuantity(line,m), price=materialPriceTL(m,state.settings);
       if (!m) issue(`${recipe.name} · malzeme ${j+1}: malzeme seçin.`,'sets',set.id,`rows.${i}.materials.${j}.materialId`);
-      if (amount===null || amount<0) issue(`${recipe.name} · malzeme ${j+1}: geçerli miktar girin.`,'sets',set.id,`rows.${i}.materials.${j}.quantity`);
+      if (amount===null || amount<0) {
+        const area=m?.unit==='metrekare' && (Object.hasOwn(line,'widthCm') || Object.hasOwn(line,'lengthCm'));
+        const length=m?.unit==='metre' && Object.hasOwn(line,'meterLengthCm');
+        issue(`${recipe.name} · malzeme ${j+1}: ${area?'iki kenarı da cm cinsinden sıfırdan büyük girin':length?'uzunluğu cm cinsinden sıfırdan büyük girin':'geçerli miktar girin'}.`,'sets',set.id,`rows.${i}.materials.${j}.${area?'widthCm':length?'meterLengthCm':'quantity'}`);
+      }
       if (m && price===null) {
         const reason=number(m.price)===null||number(m.price)<0?'birim fiyatını girin':
           !['metre','adet','metrekare','kg'].includes(m.unit)?'geçerli malzeme birimi seçin':
