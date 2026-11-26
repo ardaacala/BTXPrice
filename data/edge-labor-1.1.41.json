@@ -1,0 +1,1401 @@
+{
+  "settings": {
+    "monthlySalary": "40000",
+    "monthlyHours": "180",
+    "surcharge": "0",
+    "profit": "15",
+    "eurTry": "55.981",
+    "usdTry": "50.2282",
+    "ratesVerified": true,
+    "rateDate": "12.11.2026 06:32 (ayna kaydı)",
+    "ratesFetchedAt": "2026-11-12T09:06:22.615Z",
+    "rateSource": "TCMB Döviz Satış · veri aynası",
+    "displayCurrency": "TRY"
+  },
+  "taxes": [
+    {
+      "id": "f3579a2c-f601-4e26-a1e4-dd9877d65ab3",
+      "name": "KDV",
+      "rate": "10"
+    }
+  ],
+  "operationNames": [
+    "Pastal açma / kesim",
+    "Ek pastal",
+    "Bantlama ve ek bantlama",
+    "Ek yapıştırma",
+    "Panel açma ve panel yapıştırma",
+    "İnsizyon yapıştırma",
+    "Takviye açma ve takviye yapıştırma",
+    "Kraton, poş ve cırt işlemleri",
+    "Delme, kesme ve etiketleme",
+    "Katlama",
+    "Stokinet dikim",
+    "Lastik geçirme",
+    "Hazırlık, taşıma ve yükleme",
+    "Etiketleme"
+  ],
+  "materials": [
+    {
+      "id": "43cf2431-50be-459b-b0c0-4065304db95e",
+      "name": "56 gr lamine kumaş",
+      "code": "denme1",
+      "unit": "metrekare",
+      "price": "8.20",
+      "currency": "TRY",
+      "usdIndexPending": false,
+      "usdBasePrice": "0.1632549046153356",
+      "indexRateDate": "12.11.2026 06:32 (ayna kaydı)"
+    },
+    {
+      "id": "e4f006a7-871f-43be-87e4-d8daa49a2eb4",
+      "name": "Çift taraflı bant",
+      "code": "denemebant",
+      "unit": "metre",
+      "price": "3",
+      "currency": "TRY",
+      "usdIndexPending": false,
+      "usdBasePrice": "0.059727404127561806",
+      "indexRateDate": "12.11.2026 06:32 (ayna kaydı)"
+    },
+    {
+      "id": "50493b3f-a668-4f03-b16b-7adfe0ef4887",
+      "name": "mayo masa",
+      "code": "mayodeneme",
+      "unit": "adet",
+      "price": "18",
+      "currency": "TRY",
+      "usdIndexPending": false,
+      "usdBasePrice": "0.35836442476537084",
+      "indexRateDate": "12.11.2026 06:32 (ayna kaydı)"
+    },
+    {
+      "id": "d150cabf-4330-4347-92f2-ac645722a045",
+      "name": "optape 10x30",
+      "code": "optape",
+      "unit": "adet",
+      "price": "3",
+      "currency": "TRY",
+      "usdIndexPending": false,
+      "usdBasePrice": "0.059727404127561806",
+      "indexRateDate": "12.11.2026 06:32 (ayna kaydı)"
+    },
+    {
+      "id": "44b2a467-0579-4431-8457-c1bcc31ff52b",
+      "name": "Takviyeli cerrahi önlük",
+      "code": "önlükdeneme",
+      "unit": "adet",
+      "price": "35",
+      "currency": "TRY",
+      "usdIndexPending": false,
+      "usdBasePrice": "0.6968197148215544",
+      "indexRateDate": "12.11.2026 06:32 (ayna kaydı)"
+    },
+    {
+      "id": "ac228ab9-4607-4910-9632-1d77db81f2b9",
+      "name": "Havlu 40x40",
+      "code": "deneme havlu",
+      "unit": "adet",
+      "price": "2.5",
+      "currency": "TRY",
+      "usdIndexPending": false,
+      "usdBasePrice": "0.04977283677296817",
+      "indexRateDate": "12.11.2026 06:32 (ayna kaydı)"
+    },
+    {
+      "id": "9ca7c1ca-a3af-4eb1-8ec3-95ae531db885",
+      "name": "Strelizasyon Bohçası",
+      "code": "deneme bohça",
+      "unit": "metrekare",
+      "price": "5.20",
+      "currency": "TRY",
+      "usdIndexPending": false,
+      "usdBasePrice": "0.1035275004877738",
+      "indexRateDate": "12.11.2026 06:32 (ayna kaydı)"
+    },
+    {
+      "id": "d4daf856-2649-4bc2-b132-b0a2df7bebfb",
+      "name": "Sterlizasyon rulosu",
+      "code": "denemerulo",
+      "unit": "metre",
+      "price": "7",
+      "currency": "TRY",
+      "usdIndexPending": false,
+      "usdBasePrice": "0.13936394296431087",
+      "indexRateDate": "12.11.2026 06:32 (ayna kaydı)"
+    }
+  ],
+  "recipes": [
+    {
+      "id": "2c6d9fc2-c84d-43a0-89d6-b2a94746d9a2",
+      "name": "Anesteji Örtüsü",
+      "code": "Anesteji deneme",
+      "lot": "deneme1",
+      "size": "150x240",
+      "fabric": "56Gr lamine",
+      "gsm": "56Gr",
+      "reinforcement": "yok",
+      "panel": "yok",
+      "folded": "yes",
+      "method": "production",
+      "readySource": "details",
+      "operations": [
+        {
+          "name": "Pastal açma / kesim",
+          "status": "known",
+          "duration": "0.35",
+          "timeType": "elapsed",
+          "unit": "minute",
+          "people": "2",
+          "output": "100",
+          "scope": "batch",
+          "description": "",
+          "note": "",
+          "surchargeIncluded": false
+        },
+        {
+          "name": "Bantlama ve ek bantlama",
+          "status": "known",
+          "duration": "0.185",
+          "timeType": "elapsed",
+          "unit": "minute",
+          "people": "1",
+          "output": "1",
+          "scope": "batch",
+          "description": "",
+          "note": "",
+          "surchargeIncluded": false
+        },
+        {
+          "name": "Katlama",
+          "status": "known",
+          "duration": "0.38",
+          "timeType": "elapsed",
+          "unit": "minute",
+          "people": "2",
+          "output": "1",
+          "scope": "batch",
+          "description": "",
+          "note": "",
+          "surchargeIncluded": false
+        },
+        {
+          "name": "Etiketleme",
+          "status": "known",
+          "duration": "0.05",
+          "timeType": "elapsed",
+          "unit": "minute",
+          "people": "2",
+          "output": "1",
+          "scope": "batch",
+          "description": "",
+          "note": "",
+          "surchargeIncluded": false
+        }
+      ],
+      "readyTotal": {
+        "status": "missing",
+        "duration": "",
+        "timeType": "personMinutes",
+        "unit": "minute",
+        "people": "",
+        "output": "",
+        "scope": "unit",
+        "description": "",
+        "note": "",
+        "surchargeIncluded": false
+      },
+      "materials": [
+        {
+          "materialId": "43cf2431-50be-459b-b0c0-4065304db95e",
+          "quantity": "3.6"
+        },
+        {
+          "materialId": "e4f006a7-871f-43be-87e4-d8daa49a2eb4",
+          "quantity": "1.9"
+        }
+      ]
+    },
+    {
+      "id": "8c98818b-fddb-45a8-b717-31668e95bebe",
+      "name": "Ayak Örtüsü",
+      "code": "deneme",
+      "lot": "x",
+      "size": "150x180",
+      "fabric": "56Gr",
+      "gsm": "56",
+      "reinforcement": "yok",
+      "panel": "yok",
+      "folded": "yes",
+      "method": "production",
+      "readySource": "details",
+      "operations": [
+        {
+          "name": "Pastal açma / kesim",
+          "status": "known",
+          "duration": "0.29",
+          "timeType": "elapsed",
+          "unit": "minute",
+          "people": "2",
+          "output": "100",
+          "scope": "batch",
+          "description": "",
+          "note": "",
+          "surchargeIncluded": false
+        },
+        {
+          "name": "Bantlama ve ek bantlama",
+          "status": "known",
+          "duration": "0.17",
+          "timeType": "elapsed",
+          "unit": "minute",
+          "people": "1",
+          "output": "1",
+          "scope": "batch",
+          "description": "",
+          "note": "",
+          "surchargeIncluded": false
+        },
+        {
+          "name": "Katlama",
+          "status": "known",
+          "duration": "0.35",
+          "timeType": "elapsed",
+          "unit": "minute",
+          "people": "2",
+          "output": "1",
+          "scope": "batch",
+          "description": "",
+          "note": "",
+          "surchargeIncluded": false
+        },
+        {
+          "name": "Etiketleme",
+          "status": "known",
+          "duration": "0.173",
+          "timeType": "elapsed",
+          "unit": "minute",
+          "people": "1",
+          "output": "1",
+          "scope": "batch",
+          "description": "",
+          "note": "",
+          "surchargeIncluded": false
+        }
+      ],
+      "readyTotal": {
+        "status": "missing",
+        "duration": "",
+        "timeType": "personMinutes",
+        "unit": "minute",
+        "people": "",
+        "output": "",
+        "scope": "unit",
+        "description": "",
+        "note": "",
+        "surchargeIncluded": false
+      },
+      "materials": [
+        {
+          "materialId": "43cf2431-50be-459b-b0c0-4065304db95e",
+          "quantity": "2.7"
+        }
+      ]
+    },
+    {
+      "id": "fe4843de-37a3-4018-b7d5-d8889fa46551",
+      "name": "bantlı Örtü ",
+      "code": "deneme ayak",
+      "lot": "deneme lolt",
+      "size": "75x100",
+      "fabric": "56Gr",
+      "gsm": "56",
+      "reinforcement": "yok",
+      "panel": "oyk",
+      "folded": "yes",
+      "method": "production",
+      "readySource": "details",
+      "operations": [
+        {
+          "name": "Pastal açma / kesim",
+          "status": "known",
+          "duration": "0.18",
+          "timeType": "elapsed",
+          "unit": "minute",
+          "people": "2",
+          "output": "100",
+          "scope": "batch",
+          "description": "",
+          "note": "",
+          "surchargeIncluded": false
+        },
+        {
+          "name": "Bantlama ve ek bantlama",
+          "status": "known",
+          "duration": "0.08",
+          "timeType": "elapsed",
+          "unit": "minute",
+          "people": "2",
+          "output": "1",
+          "scope": "batch",
+          "description": "",
+          "note": "",
+          "surchargeIncluded": false
+        },
+        {
+          "name": "Katlama",
+          "status": "known",
+          "duration": "0.30",
+          "timeType": "elapsed",
+          "unit": "minute",
+          "people": "1",
+          "output": "1",
+          "scope": "batch",
+          "description": "",
+          "note": "",
+          "surchargeIncluded": false
+        }
+      ],
+      "readyTotal": {
+        "status": "missing",
+        "duration": "",
+        "timeType": "personMinutes",
+        "unit": "minute",
+        "people": "",
+        "output": "",
+        "scope": "unit",
+        "description": "",
+        "note": "",
+        "surchargeIncluded": false
+      },
+      "materials": [
+        {
+          "materialId": "43cf2431-50be-459b-b0c0-4065304db95e",
+          "quantity": "0.75"
+        },
+        {
+          "materialId": "e4f006a7-871f-43be-87e4-d8daa49a2eb4",
+          "quantity": "0.9"
+        }
+      ]
+    },
+    {
+      "id": "afdfa6b2-afc6-4a63-9153-6fcc5ce2a7e6",
+      "name": "Alet Masa",
+      "code": "deneme alet",
+      "lot": "deneme alat",
+      "size": "150x200",
+      "fabric": "56Gr",
+      "gsm": "56",
+      "reinforcement": "",
+      "panel": "",
+      "folded": "yes",
+      "method": "production",
+      "readySource": "details",
+      "operations": [
+        {
+          "name": "Pastal açma / kesim",
+          "status": "known",
+          "duration": "0.38",
+          "timeType": "elapsed",
+          "unit": "minute",
+          "people": "2",
+          "output": "100",
+          "scope": "batch",
+          "description": "",
+          "note": "",
+          "surchargeIncluded": false
+        }
+      ],
+      "readyTotal": {
+        "status": "missing",
+        "duration": "",
+        "timeType": "personMinutes",
+        "unit": "minute",
+        "people": "",
+        "output": "",
+        "scope": "unit",
+        "description": "",
+        "note": "",
+        "surchargeIncluded": false
+      },
+      "materials": [
+        {
+          "materialId": "43cf2431-50be-459b-b0c0-4065304db95e",
+          "quantity": "3"
+        }
+      ]
+    },
+    {
+      "id": "494f68cb-f736-4e24-9feb-2be504bd0a2d",
+      "name": "Sterilizasyon bohçası",
+      "code": "deneme st",
+      "lot": "deneme",
+      "size": "100x100",
+      "fabric": "sms",
+      "gsm": "20",
+      "reinforcement": "yok",
+      "panel": "yok",
+      "folded": "yes",
+      "method": "production",
+      "readySource": "details",
+      "operations": [
+        {
+          "name": "Pastal açma / kesim",
+          "status": "known",
+          "duration": "0.115",
+          "timeType": "elapsed",
+          "unit": "minute",
+          "people": "2",
+          "output": "100",
+          "scope": "batch",
+          "description": "",
+          "note": "",
+          "surchargeIncluded": false
+        }
+      ],
+      "readyTotal": {
+        "status": "missing",
+        "duration": "",
+        "timeType": "personMinutes",
+        "unit": "minute",
+        "people": "",
+        "output": "",
+        "scope": "unit",
+        "description": "",
+        "note": "",
+        "surchargeIncluded": false
+      },
+      "materials": [
+        {
+          "materialId": "9ca7c1ca-a3af-4eb1-8ec3-95ae531db885",
+          "quantity": "1"
+        }
+      ]
+    },
+    {
+      "id": "7628ea30-67dd-40a3-b940-e476393da3eb",
+      "name": "Mayo MAsa",
+      "code": "deneme alet amsa",
+      "lot": "denem alaet amasa",
+      "size": "80x150",
+      "fabric": "adet",
+      "gsm": "adet",
+      "reinforcement": "",
+      "panel": "",
+      "folded": "yes",
+      "method": "production",
+      "readySource": "details",
+      "operations": [
+        {
+          "name": "Pastal açma / kesim",
+          "status": "notApplicable",
+          "duration": "",
+          "timeType": "elapsed",
+          "unit": "minute",
+          "people": "",
+          "output": "",
+          "scope": "batch",
+          "description": "",
+          "note": "",
+          "surchargeIncluded": false
+        }
+      ],
+      "readyTotal": {
+        "status": "missing",
+        "duration": "",
+        "timeType": "personMinutes",
+        "unit": "minute",
+        "people": "",
+        "output": "",
+        "scope": "unit",
+        "description": "",
+        "note": "",
+        "surchargeIncluded": false
+      },
+      "materials": [
+        {
+          "materialId": "50493b3f-a668-4f03-b16b-7adfe0ef4887",
+          "quantity": "1"
+        }
+      ]
+    },
+    {
+      "id": "8fe88ab1-21a6-49e6-9b5f-cd91f0e321c6",
+      "name": "Op-Tape",
+      "code": "optape",
+      "lot": "deneme op tape",
+      "size": "10x30",
+      "fabric": "adet",
+      "gsm": "",
+      "reinforcement": "",
+      "panel": "",
+      "folded": "",
+      "method": "production",
+      "readySource": "details",
+      "operations": [
+        {
+          "name": "Pastal açma / kesim",
+          "status": "notApplicable",
+          "duration": "",
+          "timeType": "elapsed",
+          "unit": "minute",
+          "people": "",
+          "output": "",
+          "scope": "batch",
+          "description": "",
+          "note": "",
+          "surchargeIncluded": false
+        }
+      ],
+      "readyTotal": {
+        "status": "missing",
+        "duration": "",
+        "timeType": "personMinutes",
+        "unit": "minute",
+        "people": "",
+        "output": "",
+        "scope": "unit",
+        "description": "",
+        "note": "",
+        "surchargeIncluded": false
+      },
+      "materials": [
+        {
+          "materialId": "d150cabf-4330-4347-92f2-ac645722a045",
+          "quantity": "1"
+        }
+      ]
+    },
+    {
+      "id": "4f1af792-56a9-480f-a4dc-3e7a4a9ca493",
+      "name": "önlük",
+      "code": "deneme önlük",
+      "lot": "deneme önlük",
+      "size": "",
+      "fabric": "",
+      "gsm": "",
+      "reinforcement": "",
+      "panel": "",
+      "folded": "",
+      "method": "production",
+      "readySource": "details",
+      "operations": [
+        {
+          "name": "Pastal açma / kesim",
+          "status": "notApplicable",
+          "duration": "",
+          "timeType": "elapsed",
+          "unit": "minute",
+          "people": "",
+          "output": "",
+          "scope": "batch",
+          "description": "",
+          "note": "",
+          "surchargeIncluded": false
+        }
+      ],
+      "readyTotal": {
+        "status": "missing",
+        "duration": "",
+        "timeType": "personMinutes",
+        "unit": "minute",
+        "people": "",
+        "output": "",
+        "scope": "unit",
+        "description": "",
+        "note": "",
+        "surchargeIncluded": false
+      },
+      "materials": [
+        {
+          "materialId": "44b2a467-0579-4431-8457-c1bcc31ff52b",
+          "quantity": "1"
+        }
+      ]
+    },
+    {
+      "id": "7e8df1b5-866d-45f7-8564-e486ab2e3fec",
+      "name": "havlu",
+      "code": "havlu",
+      "lot": "deneme havlu",
+      "size": "40x40",
+      "fabric": "",
+      "gsm": "",
+      "reinforcement": "",
+      "panel": "",
+      "folded": "",
+      "method": "production",
+      "readySource": "details",
+      "operations": [
+        {
+          "name": "Pastal açma / kesim",
+          "status": "notApplicable",
+          "duration": "",
+          "timeType": "elapsed",
+          "unit": "minute",
+          "people": "",
+          "output": "",
+          "scope": "batch",
+          "description": "",
+          "note": "",
+          "surchargeIncluded": false
+        }
+      ],
+      "readyTotal": {
+        "status": "missing",
+        "duration": "",
+        "timeType": "personMinutes",
+        "unit": "minute",
+        "people": "",
+        "output": "",
+        "scope": "unit",
+        "description": "",
+        "note": "",
+        "surchargeIncluded": false
+      },
+      "materials": [
+        {
+          "materialId": "ac228ab9-4607-4910-9632-1d77db81f2b9",
+          "quantity": "1"
+        }
+      ]
+    }
+  ],
+  "profiles": [
+    {
+      "id": "4729305a-ef5f-4d8c-ac81-f446db055eed",
+      "name": "RMD-326 Deneme genel Cerrahi",
+      "bundleType": "20gr",
+      "bundleSize": "100x100",
+      "rollSize": "40x55",
+      "mode": "box",
+      "setsPerBox": "8",
+      "setsPerBag": "1",
+      "rollInsert": {
+        "status": "known",
+        "duration": "0.300",
+        "timeType": "elapsed",
+        "unit": "minute",
+        "people": "1",
+        "output": "",
+        "scope": "unit",
+        "description": "",
+        "note": "",
+        "surchargeIncluded": false
+      },
+      "rollClose": {
+        "status": "known",
+        "duration": "0.033",
+        "timeType": "elapsed",
+        "unit": "minute",
+        "people": "1",
+        "output": "",
+        "scope": "unit",
+        "description": "",
+        "note": "",
+        "surchargeIncluded": false
+      },
+      "boxLabor": {
+        "status": "known",
+        "duration": "1.035",
+        "timeType": "elapsed",
+        "unit": "minute",
+        "people": "3",
+        "output": "",
+        "scope": "unit",
+        "description": "",
+        "note": "",
+        "surchargeIncluded": false
+      },
+      "bagLabor": {
+        "status": "notApplicable",
+        "duration": "0",
+        "timeType": "elapsed",
+        "unit": "minute",
+        "people": "",
+        "output": "",
+        "scope": "unit",
+        "description": "",
+        "note": "",
+        "surchargeIncluded": false
+      }
+    }
+  ],
+  "sets": [
+    {
+      "id": "6c182179-1c1e-4bc6-8b36-afce2f9008cc",
+      "name": "Genel Cerrahi Örtü Seti",
+      "code": "RMD-326",
+      "lot": "xxx",
+      "profileId": "4729305a-ef5f-4d8c-ac81-f446db055eed",
+      "orderQuantity": "7300",
+      "profitRate": "040",
+      "rows": [
+        {
+          "recipeId": "2c6d9fc2-c84d-43a0-89d6-b2a94746d9a2",
+          "quantity": "1",
+          "placement": {
+            "status": "known",
+            "duration": "0.03",
+            "timeType": "elapsed",
+            "unit": "minute",
+            "people": "1",
+            "output": "",
+            "scope": "unit",
+            "description": "",
+            "note": "",
+            "surchargeIncluded": false,
+            "coverage": "item",
+            "sets": ""
+          },
+          "priceSnapshot": {
+            "recipeId": "2c6d9fc2-c84d-43a0-89d6-b2a94746d9a2",
+            "material": 35.22,
+            "labor": 3.8963
+          },
+          "materials": [
+            {
+              "materialId": "43cf2431-50be-459b-b0c0-4065304db95e",
+              "quantity": "3.6",
+              "size": "150x240",
+              "fabric": "56Gr lamine",
+              "widthCm": "150",
+              "lengthCm": "240"
+            },
+            {
+              "materialId": "e4f006a7-871f-43be-87e4-d8daa49a2eb4",
+              "quantity": "1.9",
+              "size": "150x240",
+              "fabric": "56Gr lamine"
+            }
+          ]
+        },
+        {
+          "recipeId": "8c98818b-fddb-45a8-b717-31668e95bebe",
+          "quantity": "1",
+          "placement": {
+            "status": "known",
+            "duration": "0.03",
+            "timeType": "elapsed",
+            "unit": "minute",
+            "people": "1",
+            "output": "",
+            "scope": "unit",
+            "description": "",
+            "note": "",
+            "surchargeIncluded": false,
+            "coverage": "item",
+            "sets": ""
+          },
+          "priceSnapshot": {
+            "recipeId": "8c98818b-fddb-45a8-b717-31668e95bebe",
+            "material": 22.14,
+            "labor": 3.8844
+          },
+          "materials": [
+            {
+              "materialId": "43cf2431-50be-459b-b0c0-4065304db95e",
+              "quantity": "2.7",
+              "size": "150x180",
+              "fabric": "56Gr",
+              "widthCm": "150",
+              "lengthCm": "180"
+            }
+          ]
+        },
+        {
+          "recipeId": "fe4843de-37a3-4018-b7d5-d8889fa46551",
+          "quantity": "2",
+          "placement": {
+            "status": "known",
+            "duration": "0.03",
+            "timeType": "elapsed",
+            "unit": "minute",
+            "people": "1",
+            "output": "",
+            "scope": "unit",
+            "description": "",
+            "note": "",
+            "surchargeIncluded": false,
+            "coverage": "item",
+            "sets": ""
+          },
+          "priceSnapshot": {
+            "recipeId": "fe4843de-37a3-4018-b7d5-d8889fa46551",
+            "material": 8.85,
+            "labor": 1.717
+          },
+          "materials": [
+            {
+              "materialId": "43cf2431-50be-459b-b0c0-4065304db95e",
+              "quantity": "0.75",
+              "size": "75x100",
+              "fabric": "56Gr",
+              "widthCm": "75",
+              "lengthCm": "100"
+            },
+            {
+              "materialId": "e4f006a7-871f-43be-87e4-d8daa49a2eb4",
+              "quantity": "0.9",
+              "size": "75x100",
+              "fabric": "56Gr"
+            }
+          ]
+        },
+        {
+          "recipeId": "afdfa6b2-afc6-4a63-9153-6fcc5ce2a7e6",
+          "quantity": "1",
+          "placement": {
+            "status": "known",
+            "duration": "0.03",
+            "timeType": "elapsed",
+            "unit": "minute",
+            "people": "1",
+            "output": "",
+            "scope": "unit",
+            "description": "",
+            "note": "",
+            "surchargeIncluded": false,
+            "coverage": "item",
+            "sets": ""
+          },
+          "priceSnapshot": {
+            "recipeId": "afdfa6b2-afc6-4a63-9153-6fcc5ce2a7e6",
+            "material": 24.6,
+            "labor": 0.0281
+          },
+          "materials": [
+            {
+              "materialId": "43cf2431-50be-459b-b0c0-4065304db95e",
+              "quantity": "3",
+              "size": "150x200",
+              "fabric": "56Gr",
+              "widthCm": "150",
+              "lengthCm": "200"
+            }
+          ]
+        },
+        {
+          "recipeId": "8fe88ab1-21a6-49e6-9b5f-cd91f0e321c6",
+          "quantity": "2",
+          "placement": {
+            "status": "known",
+            "duration": "0.03",
+            "timeType": "elapsed",
+            "unit": "minute",
+            "people": "1",
+            "output": "",
+            "scope": "unit",
+            "description": "",
+            "note": "",
+            "surchargeIncluded": false,
+            "coverage": "item",
+            "sets": ""
+          },
+          "priceSnapshot": {
+            "recipeId": "8fe88ab1-21a6-49e6-9b5f-cd91f0e321c6",
+            "material": 3,
+            "labor": 0
+          },
+          "materials": [
+            {
+              "materialId": "d150cabf-4330-4347-92f2-ac645722a045",
+              "quantity": "1",
+              "size": "10x30",
+              "fabric": "adet"
+            }
+          ]
+        },
+        {
+          "recipeId": "4f1af792-56a9-480f-a4dc-3e7a4a9ca493",
+          "quantity": "2",
+          "placement": {
+            "status": "known",
+            "duration": "0.03",
+            "timeType": "elapsed",
+            "unit": "minute",
+            "people": "1",
+            "output": "",
+            "scope": "unit",
+            "description": "",
+            "note": "",
+            "surchargeIncluded": false,
+            "coverage": "item",
+            "sets": ""
+          },
+          "priceSnapshot": {
+            "recipeId": "4f1af792-56a9-480f-a4dc-3e7a4a9ca493",
+            "material": 35,
+            "labor": 0
+          },
+          "materials": [
+            {
+              "materialId": "44b2a467-0579-4431-8457-c1bcc31ff52b",
+              "quantity": "1",
+              "size": "",
+              "fabric": ""
+            }
+          ]
+        },
+        {
+          "recipeId": "7e8df1b5-866d-45f7-8564-e486ab2e3fec",
+          "quantity": "2",
+          "placement": {
+            "status": "known",
+            "duration": "0.03",
+            "timeType": "elapsed",
+            "unit": "minute",
+            "people": "1",
+            "output": "",
+            "scope": "unit",
+            "description": "",
+            "note": "",
+            "surchargeIncluded": false,
+            "coverage": "item",
+            "sets": ""
+          },
+          "priceSnapshot": {
+            "recipeId": "7e8df1b5-866d-45f7-8564-e486ab2e3fec",
+            "material": 2.5,
+            "labor": 0
+          },
+          "materials": [
+            {
+              "materialId": "ac228ab9-4607-4910-9632-1d77db81f2b9",
+              "quantity": "1",
+              "size": "40x40",
+              "fabric": ""
+            }
+          ]
+        },
+        {
+          "recipeId": "494f68cb-f736-4e24-9feb-2be504bd0a2d",
+          "quantity": "1",
+          "placement": {
+            "status": "known",
+            "duration": "1.25",
+            "timeType": "elapsed",
+            "unit": "minute",
+            "people": "2",
+            "output": "",
+            "scope": "unit",
+            "description": "",
+            "note": "",
+            "surchargeIncluded": false,
+            "coverage": "item",
+            "sets": ""
+          },
+          "priceSnapshot": {
+            "recipeId": "494f68cb-f736-4e24-9feb-2be504bd0a2d",
+            "material": 5.2,
+            "labor": 0.0085
+          },
+          "materials": [
+            {
+              "materialId": "9ca7c1ca-a3af-4eb1-8ec3-95ae531db885",
+              "quantity": "1",
+              "size": "100x100",
+              "fabric": "sms",
+              "widthCm": "100",
+              "lengthCm": "100"
+            }
+          ]
+        },
+        {
+          "recipeId": "7628ea30-67dd-40a3-b940-e476393da3eb",
+          "quantity": "1",
+          "placement": {
+            "status": "known",
+            "duration": "0.03",
+            "timeType": "elapsed",
+            "unit": "minute",
+            "people": "1",
+            "output": "",
+            "scope": "unit",
+            "description": "",
+            "note": "",
+            "surchargeIncluded": false,
+            "coverage": "item",
+            "sets": ""
+          },
+          "priceSnapshot": {
+            "recipeId": "7628ea30-67dd-40a3-b940-e476393da3eb",
+            "material": 18,
+            "labor": 0
+          },
+          "materials": [
+            {
+              "materialId": "50493b3f-a668-4f03-b16b-7adfe0ef4887",
+              "quantity": "1",
+              "size": "80x150",
+              "fabric": "adet"
+            }
+          ]
+        }
+      ],
+      "extras": [],
+      "taxIds": [],
+      "otherExpenses": [],
+      "shippingBoxSize": "",
+      "shippingBoxPrice": ""
+    },
+    {
+      "id": "06899ae1-e070-41ab-a6e3-ab90b160113c",
+      "name": "JEED HealthCare Genel Cerrahi Katalog Örtü Seti",
+      "code": "RMD-326",
+      "lot": "G347",
+      "profileId": "4729305a-ef5f-4d8c-ac81-f446db055eed",
+      "orderQuantity": "7000",
+      "profitRate": "30.92",
+      "rows": [
+        {
+          "recipeId": "2c6d9fc2-c84d-43a0-89d6-b2a94746d9a2",
+          "quantity": "1",
+          "placement": {
+            "status": "known",
+            "duration": "0.03",
+            "timeType": "elapsed",
+            "unit": "minute",
+            "people": "1",
+            "output": "",
+            "scope": "unit",
+            "description": "",
+            "note": "",
+            "surchargeIncluded": false,
+            "coverage": "item",
+            "sets": ""
+          },
+          "priceSnapshot": {
+            "recipeId": "2c6d9fc2-c84d-43a0-89d6-b2a94746d9a2",
+            "material": 35.22,
+            "labor": 4.8704
+          },
+          "materials": [
+            {
+              "materialId": "43cf2431-50be-459b-b0c0-4065304db95e",
+              "quantity": "3.6",
+              "size": "150x240",
+              "fabric": "56Gr lamine",
+              "widthCm": "150",
+              "lengthCm": "240"
+            },
+            {
+              "materialId": "e4f006a7-871f-43be-87e4-d8daa49a2eb4",
+              "quantity": "1.9",
+              "size": "150x240",
+              "fabric": "56Gr lamine"
+            }
+          ]
+        },
+        {
+          "recipeId": "8c98818b-fddb-45a8-b717-31668e95bebe",
+          "quantity": "1",
+          "placement": {
+            "status": "known",
+            "duration": "0.03",
+            "timeType": "elapsed",
+            "unit": "minute",
+            "people": "1",
+            "output": "",
+            "scope": "unit",
+            "description": "",
+            "note": "",
+            "surchargeIncluded": false,
+            "coverage": "item",
+            "sets": ""
+          },
+          "priceSnapshot": {
+            "recipeId": "8c98818b-fddb-45a8-b717-31668e95bebe",
+            "material": 22.14,
+            "labor": 4.8556
+          },
+          "materials": [
+            {
+              "materialId": "43cf2431-50be-459b-b0c0-4065304db95e",
+              "quantity": "2.7",
+              "size": "150x180",
+              "fabric": "56Gr",
+              "widthCm": "150",
+              "lengthCm": "180"
+            }
+          ]
+        },
+        {
+          "recipeId": "fe4843de-37a3-4018-b7d5-d8889fa46551",
+          "quantity": "1",
+          "placement": {
+            "status": "known",
+            "duration": "0.03",
+            "timeType": "elapsed",
+            "unit": "minute",
+            "people": "1",
+            "output": "",
+            "scope": "unit",
+            "description": "",
+            "note": "",
+            "surchargeIncluded": false,
+            "coverage": "item",
+            "sets": ""
+          },
+          "priceSnapshot": {
+            "recipeId": "fe4843de-37a3-4018-b7d5-d8889fa46551",
+            "material": 8.85,
+            "labor": 2.1463
+          },
+          "materials": [
+            {
+              "materialId": "43cf2431-50be-459b-b0c0-4065304db95e",
+              "quantity": "0.75",
+              "size": "75x100",
+              "fabric": "56Gr",
+              "widthCm": "75",
+              "lengthCm": "100"
+            },
+            {
+              "materialId": "e4f006a7-871f-43be-87e4-d8daa49a2eb4",
+              "quantity": "0.9",
+              "size": "75x100",
+              "fabric": "56Gr"
+            }
+          ]
+        },
+        {
+          "recipeId": "fe4843de-37a3-4018-b7d5-d8889fa46551",
+          "quantity": "2",
+          "placement": {
+            "status": "known",
+            "duration": "0.03",
+            "timeType": "elapsed",
+            "unit": "minute",
+            "people": "1",
+            "output": "",
+            "scope": "unit",
+            "description": "",
+            "note": "",
+            "surchargeIncluded": false,
+            "coverage": "item",
+            "sets": ""
+          },
+          "priceSnapshot": {
+            "recipeId": "fe4843de-37a3-4018-b7d5-d8889fa46551",
+            "material": 8.85,
+            "labor": 2.1463
+          },
+          "materials": [
+            {
+              "materialId": "43cf2431-50be-459b-b0c0-4065304db95e",
+              "quantity": "0.75",
+              "size": "75x100",
+              "fabric": "56Gr",
+              "widthCm": "75",
+              "lengthCm": "100"
+            },
+            {
+              "materialId": "e4f006a7-871f-43be-87e4-d8daa49a2eb4",
+              "quantity": "0.9",
+              "size": "75x100",
+              "fabric": "56Gr"
+            }
+          ]
+        },
+        {
+          "recipeId": "afdfa6b2-afc6-4a63-9153-6fcc5ce2a7e6",
+          "quantity": "1",
+          "placement": {
+            "status": "known",
+            "duration": "0.03",
+            "timeType": "elapsed",
+            "unit": "minute",
+            "people": "1",
+            "output": "",
+            "scope": "unit",
+            "description": "",
+            "note": "",
+            "surchargeIncluded": false,
+            "coverage": "item",
+            "sets": ""
+          },
+          "priceSnapshot": {
+            "recipeId": "afdfa6b2-afc6-4a63-9153-6fcc5ce2a7e6",
+            "material": 24.6,
+            "labor": 0.0352
+          },
+          "materials": [
+            {
+              "materialId": "43cf2431-50be-459b-b0c0-4065304db95e",
+              "quantity": "3",
+              "size": "150x200",
+              "fabric": "56Gr",
+              "widthCm": "150",
+              "lengthCm": "200"
+            }
+          ]
+        },
+        {
+          "recipeId": "494f68cb-f736-4e24-9feb-2be504bd0a2d",
+          "quantity": "1",
+          "placement": {
+            "status": "known",
+            "duration": "1.25",
+            "timeType": "elapsed",
+            "unit": "minute",
+            "people": "1",
+            "output": "",
+            "scope": "unit",
+            "description": "",
+            "note": "",
+            "surchargeIncluded": false,
+            "coverage": "item",
+            "sets": ""
+          },
+          "priceSnapshot": {
+            "recipeId": "494f68cb-f736-4e24-9feb-2be504bd0a2d",
+            "material": 5.2,
+            "labor": 0.0106
+          },
+          "materials": [
+            {
+              "materialId": "9ca7c1ca-a3af-4eb1-8ec3-95ae531db885",
+              "quantity": "1",
+              "size": "100x100",
+              "fabric": "sms",
+              "widthCm": "100",
+              "lengthCm": "100"
+            }
+          ]
+        },
+        {
+          "recipeId": "7628ea30-67dd-40a3-b940-e476393da3eb",
+          "quantity": "1",
+          "placement": {
+            "status": "known",
+            "duration": "0.03",
+            "timeType": "elapsed",
+            "unit": "minute",
+            "people": "1",
+            "output": "",
+            "scope": "unit",
+            "description": "",
+            "note": "",
+            "surchargeIncluded": false,
+            "coverage": "item",
+            "sets": ""
+          },
+          "priceSnapshot": {
+            "recipeId": "7628ea30-67dd-40a3-b940-e476393da3eb",
+            "material": 18,
+            "labor": 0
+          },
+          "materials": [
+            {
+              "materialId": "50493b3f-a668-4f03-b16b-7adfe0ef4887",
+              "quantity": "1",
+              "size": "80x150",
+              "fabric": "adet"
+            }
+          ]
+        },
+        {
+          "recipeId": "8fe88ab1-21a6-49e6-9b5f-cd91f0e321c6",
+          "quantity": "2",
+          "placement": {
+            "status": "known",
+            "duration": "0.03",
+            "timeType": "elapsed",
+            "unit": "minute",
+            "people": "1",
+            "output": "",
+            "scope": "unit",
+            "description": "",
+            "note": "",
+            "surchargeIncluded": false,
+            "coverage": "item",
+            "sets": ""
+          },
+          "priceSnapshot": {
+            "recipeId": "8fe88ab1-21a6-49e6-9b5f-cd91f0e321c6",
+            "material": 3,
+            "labor": 0
+          },
+          "materials": [
+            {
+              "materialId": "d150cabf-4330-4347-92f2-ac645722a045",
+              "quantity": "1",
+              "size": "10x30",
+              "fabric": "adet"
+            }
+          ]
+        },
+        {
+          "recipeId": "4f1af792-56a9-480f-a4dc-3e7a4a9ca493",
+          "quantity": "2",
+          "placement": {
+            "status": "known",
+            "duration": "0.03",
+            "timeType": "elapsed",
+            "unit": "minute",
+            "people": "1",
+            "output": "",
+            "scope": "unit",
+            "description": "",
+            "note": "",
+            "surchargeIncluded": false,
+            "coverage": "item",
+            "sets": ""
+          },
+          "priceSnapshot": {
+            "recipeId": "4f1af792-56a9-480f-a4dc-3e7a4a9ca493",
+            "material": 35,
+            "labor": 0
+          },
+          "materials": [
+            {
+              "materialId": "44b2a467-0579-4431-8457-c1bcc31ff52b",
+              "quantity": "1",
+              "size": "",
+              "fabric": ""
+            }
+          ]
+        },
+        {
+          "recipeId": "7e8df1b5-866d-45f7-8564-e486ab2e3fec",
+          "quantity": "2",
+          "placement": {
+            "status": "known",
+            "duration": "0.03",
+            "timeType": "elapsed",
+            "unit": "minute",
+            "people": "1",
+            "output": "",
+            "scope": "unit",
+            "description": "",
+            "note": "",
+            "surchargeIncluded": false,
+            "coverage": "item",
+            "sets": ""
+          },
+          "priceSnapshot": {
+            "recipeId": "7e8df1b5-866d-45f7-8564-e486ab2e3fec",
+            "material": 2.5,
+            "labor": 0
+          },
+          "materials": [
+            {
+              "materialId": "ac228ab9-4607-4910-9632-1d77db81f2b9",
+              "quantity": "1",
+              "size": "40x40",
+              "fabric": ""
+            }
+          ]
+        }
+      ],
+      "extras": [],
+      "taxIds": [],
+      "otherExpenses": [],
+      "shippingBoxSize": "",
+      "shippingBoxPrice": ""
+    }
+  ],
+  "fabricTypes": []
+}
